@@ -1,0 +1,101 @@
+--queries for postgres transformed zone
+
+--create Requests Table
+CREATE Table Requests(
+    id int NOT NULL PRIMARY KEY,
+    countryid character varying(11),
+    healthfacility character varying(150),
+    diseaseid integer,
+    medicalsupplyid integer,
+    requeststatusid integer,
+    requestdate date,
+    patientAge integer,
+    patientWeightInKg integer,
+    diseasePhase character varying(22)
+)
+------------------
+--create shipmentR Table
+CREATE Table shipmentR(
+    id int NOT NULL PRIMARY KEY,
+    quantity integer,
+    quantityreceived integer,
+    medicalsupplyname character varying(150),
+    requestid integer,
+    shipmentstatus character varying(150),
+    shipmentcreationdate date
+)
+--create Disease Table
+CREATE TABLE Disease
+(
+    id int NOT NULL PRIMARY KEY,
+    name character varying(150),
+    completeName character varying(150),
+	medicalSuppliesIDs Integer[]
+)
+------------
+
+--create RequestStatus Table
+CREATE TABLE RequestStatus
+(
+    id int NOT NULL PRIMARY KEY,
+    name character varying(150)
+)
+------------
+
+--create Manufacturer Table
+CREATE TABLE Manufacturer
+(
+    id int NOT NULL PRIMARY KEY,
+    name character varying(150)
+)
+------------
+--create MedicalSupply Table
+CREATE TABLE MedicalSupply
+(
+    id int NOT NULL PRIMARY KEY,
+    name character varying(150),
+    completeName character varying(150),
+	manufacturersIDs Integer[]
+)
+----------
+--create medicalsupply_manufacturer Table
+CREATE TABLE medicalsupply_manufacturer
+(
+    medicalSupplyID int,
+    manufacturerID int,
+	PRIMARY KEY(medicalSupplyID, manufacturerID)
+)
+------------
+--populate medicalsupply_manufacturer Table
+insert into medicalsupply_manufacturer
+SELECT DISTINCT
+    medicalsupply.id as medicalSupplyID,
+    manufacturer.id as manufacturerID
+FROM
+    medicalsupply, manufacturer
+where manufacturer.id = ANY (medicalsupply.manufacturersids)
+order by medicalSupplyID, manufacturerID
+---------------
+--create materialized view for manufacturer_requests_summary
+CREATE MATERIALIZED VIEW manufacturer_requests_summary AS
+SELECT distinct r.id as requestID, r.requestdate as requestDate, au.shortname as shortname, rs.name as requestStatus, ms.name as medicalSupply, mf.name as manufacturer
+FROM requests r, administrationunit au, requeststatus rs, medicalsupply ms, manufacturer mf, medicalsupply_manufacturer msm
+WHERE r.countryid=au.id and r.requeststatusid=rs.id and r.medicalsupplyid=ms.id and ms.id=msm.medicalsupplyid and msm.manufacturerid=mf.id
+order by r.id, r.requestdate, au.shortname, rs.name, ms.name, mf.name;
+------------
+CREATE MATERIALIZED VIEW requests_summary1 AS 
+SELECT distinct r.id as requestID, r.requestdate as requestDate, r.healthfacility as healthFacility, au.shortname as Country, au1.shortname as continent, rs.name as requestStatus, ms.name as medicalSupply, d.name as disease
+FROM requests r, administrationunit au, requeststatus rs, medicalsupply ms, disease d, administrationunit au1
+WHERE r.countryid=au.id and r.requeststatusid=rs.id and r.medicalsupplyid=ms.id and r.diseaseid=d.id and au.parentid=au1.id
+order by r.id, r.requestdate, au.shortname, rs.name, ms.name, d.name;
+----------
+CREATE MATERIALIZED VIEW requests_summary2 AS 
+SELECT distinct r.id as requestID, r.requestdate as requestDate, au.shortname as Country, au1.shortname as continent, d.name as disease, r.patientage as patient_age,
+r.patientweightinkg as patient_weigthInKg, r.diseasephase as phase
+FROM requests r, administrationunit au, requeststatus rs, medicalsupply ms, disease d, shipmentr s, administrationunit au1
+WHERE r.countryid=au.id and r.requeststatusid=rs.id and r.medicalsupplyid=ms.id and r.diseaseid=d.id and au.parentid=au1.id
+order by r.id, r.requestdate, au.shortname, d.name, r.patientage, r.patientweightinkg, r.diseasephase;
+------
+REFRESH MATERIALIZED VIEW requests_summary1;
+REFRESH MATERIALIZED VIEW requests_summary2;
+REFRESH MATERIALIZED VIEW manufacturer_requests_summary;
