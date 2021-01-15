@@ -23,6 +23,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.Base64;
+import java.util.Date;
 import java.util.List;
 import java.util.Properties;
 import java.util.Base64.Decoder;
@@ -95,7 +96,8 @@ public organisationUnitsExtraction() {}
 		thisExtractionTS = timestamp.getTime(); //returns a long
 		String current = String.valueOf(thisExtractionTS);
 		props.setProperty("prevExtraction", prevExtraction);
-		props.setProperty("thisExtraction", current);
+		props.setProperty("thisExtraction", current);//var used for all kind of extraction(full extraction and update)
+		props.setProperty("thisFullExtraction", current);
 
 		props.store(out, null);
 		out.close();
@@ -338,18 +340,27 @@ public organisationUnitsExtraction() {}
 	
 	
 	public void setProperties(String ctrlPath) throws IOException{
-		/////////////
-	    FileInputStream in = new FileInputStream(ctrlPath);
-
+		///////////
+        FileInputStream in = new FileInputStream(ctrlPath);
+        
         Properties props = new Properties();
         props.load(in);
-		this.setDBurl(props.getProperty("DBurl"));
-		this.setDBusr(props.getProperty("DBusr"));
-		this.setDBpwd(props.getProperty("DBpwd"));
+        String WIMEDSDBurl = props.getProperty("WIMEDSDBurl");
+        System.out.println("this is the WIMEDSDBurl: "+ WIMEDSDBurl);
+		this.setDBurl(props.getProperty("WIMEDSDBurl"));
+		this.setDBusr(props.getProperty("WIMEDSDBusr"));
+		this.setDBpwd(props.getProperty("WIMEDSDBpwd"));
 		this.setHBaseURL(props.getProperty("url"));
-		this.setScannerBatch(props.getProperty("batch"));
+		this.setScannerBatch(props.getProperty("batch"));		
+		//
+		String fe = props.getProperty("thisFullExtraction");
+		long longFE = Long.parseLong(fe);
+		Date d = new Date(longFE);
+		System.out.println("last WIMEDS database Full Extraction was made on: "+ d);
+		//
+		
         in.close();
-		////////////
+		///////////
 
 	}
     

@@ -1,6 +1,8 @@
 package HBaseToWIMEDSDB;
 
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.Properties;
 
 public class updateDB_orgUnits {
 	public static void main(String[] args) throws IOException, Exception{
@@ -10,7 +12,8 @@ public class updateDB_orgUnits {
 		String ctrlPath = rootPath +"control.properties";
 
 		orgUnitsUpdate.setProperties(ctrlPath);
-		
+
+
 		//creates a scanner with TimeRange config
 		String scanner_id = orgUnitsUpdate.getTRScannerID();
 		

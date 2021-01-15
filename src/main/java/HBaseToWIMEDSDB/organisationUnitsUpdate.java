@@ -13,15 +13,20 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
 import java.util.Properties;
+import java.util.TimeZone;
 import java.util.Base64.Decoder;
+import java.util.Date;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -379,6 +384,7 @@ public organisationUnitsUpdate() {}
 			String current = String.valueOf(thisExtractionTS);
 			props.setProperty("prevExtraction", prevExtraction);
 			props.setProperty("thisExtraction", current);
+			props.setProperty("thisUpdate", current);
 
 			props.store(out, null);
 			out.close();
@@ -392,13 +398,19 @@ public organisationUnitsUpdate() {}
 
         Properties props = new Properties();
         props.load(in);
-		this.setDBurl(props.getProperty("testDBurl"));
-		this.setDBusr(props.getProperty("testDBusr"));
-		this.setDBpwd(props.getProperty("testDBpwd"));
+		this.setDBurl(props.getProperty("WIMEDSDBurl"));
+		this.setDBusr(props.getProperty("WIMEDSDBusr"));
+		this.setDBpwd(props.getProperty("WIMEDSDBpwd"));
 		this.setHBaseURL(props.getProperty("url"));
 		this.setScannerTRbatch(props.getProperty("batchTR"));
 		String startTimeCTRL="";
 		startTimeCTRL = props.getProperty("thisExtraction");
+		//
+		String update = props.getProperty("thisUpdate");
+		long longUpdate = Long.parseLong(update);
+		Date d = new Date(longUpdate);
+		System.out.println("last WIMEDS database update was made on: "+ d);
+		//
         in.close();
         
         Instant nowi = Instant.now();

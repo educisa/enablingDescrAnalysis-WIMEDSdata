@@ -1,6 +1,8 @@
 package HBaseToWIMEDSDB;
 
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.Properties;
 
 
 public class HBase_orgUnitExtraction {
@@ -10,6 +12,7 @@ public class HBase_orgUnitExtraction {
 		
 		String rootPath = Thread.currentThread().getContextClassLoader().getResource("").getPath();
 		String ctrlPath = rootPath +"control.properties";
+
 		
 		orgUnitsExtr.setProperties(ctrlPath);
 		
