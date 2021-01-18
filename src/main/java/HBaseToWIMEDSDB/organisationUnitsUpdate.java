@@ -46,6 +46,7 @@ public organisationUnitsUpdate() {}
 	
 	private String DBurl, DBusr, DBpwd, HBaseURL, scannerTRbatch, bodyScanner;
 	long thisExtractionTS;
+	String thisExtractionGV, prevExtractionGV, thisUpdateGV; //are long stored as string
 	
 	private String startTime, endTime;
 	
@@ -114,7 +115,6 @@ public organisationUnitsUpdate() {}
 		String rootPath = Thread.currentThread().getContextClassLoader().getResource("").getPath();
 		String ctrlPath = rootPath + "control.properties";
 		int updatedRows = 0;
-    
     	Boolean finishScan = false;
     	String SQLQueryUpdate = "";
     	Integer calls = 0;
@@ -134,8 +134,17 @@ public organisationUnitsUpdate() {}
 			++calls;
 			String msg = response.message();
 			Integer statusCode = response.code();
+ 
 
-			if(statusCode != 200) {
+			//FER UN IF de error=> si treu un error retornem un strin "error"
+			//si no fesim aixo podria ser que la query no s'hagi format bé, algun error mentres l'scanner recorre la taula, etc.
+			//en aquest cas s'hauria d'abortar la carrega de la query ja que el contingut d'aquesta podria ser erroni o incomplet amb el que necessitem
+			/*
+			if(statusCode != 200 || statusCode != 204) {
+				System.out.println("error de conexio");
+			}*/
+			//means scanner has finished
+			if(statusCode == 204) {
 				response.body().close();
 				finishScan=true;
 				System.out.println("...update scan finished...");
@@ -143,8 +152,7 @@ public organisationUnitsUpdate() {}
 				System.out.println("response status code: "+ statusCode);
 				System.out.println("response msg: "+ msg);
 			}
-			
-
+			//else statusCode = 200 and everything is OK
 			else {
 				JSONObject xmlJSONObj = XML.toJSONObject(encodedBodyxml);
 				JSONObject CellSetJSONObj = (JSONObject) xmlJSONObj.get("CellSet");
@@ -299,7 +307,7 @@ public organisationUnitsUpdate() {}
 		
 		deleteScanner(scanner_id);
 		//update thisExtraction timestamp with update timestamp(now)
-		setExtractionTimes(ctrlPath);
+		setGVExtractionTimes(ctrlPath);
 		return SQLQueryUpdate;	
     }
 
@@ -365,31 +373,48 @@ public organisationUnitsUpdate() {}
 		}
 	}
 	
+	//give value to global variables thisExtraction, prevExtraction, thisUpdate
+	public void setGVExtractionTimes(String ctrlPath) throws IOException {
+		////////////
+		FileInputStream in = new FileInputStream(ctrlPath);
+
+		Properties props = new Properties();
+		props.load(in);
+		this.prevExtractionGV = props.getProperty("thisExtraction");
+		in.close();
+
+		LocalDateTime now = LocalDateTime.now();
+		Timestamp timestamp = Timestamp.valueOf(now);
+		thisExtractionTS = timestamp.getTime(); //returns a long
+		String current = String.valueOf(thisExtractionTS);
+		this.thisExtractionGV = this.thisUpdateGV = current;
+		///////////	
+	}
 	
 	//call this function when extracting data=>update extraction times at props
-		public void setExtractionTimes(String ctrlPath) throws IOException {
-			////////////
-			FileInputStream in = new FileInputStream(ctrlPath);
+	public void setExtractionTimes(String ctrlPath) throws IOException {
+		///////////
+		FileInputStream in = new FileInputStream(ctrlPath);
+		Properties props = new Properties();
+		props.load(in);
+		String update = props.getProperty("thisUpdate");
+		long longUpdate = Long.parseLong(update);
+		Date d = new Date(longUpdate);
+		System.out.println("last update on WIMEDS AdministrationUnit table was made on: "+ d);
+		in.close();
 
-			Properties props = new Properties();
-			props.load(in);
-			String prevExtraction = props.getProperty("thisExtraction");
-			in.close();
-
-			FileOutputStream out = new FileOutputStream(ctrlPath);
-
-			LocalDateTime now = LocalDateTime.now();
-			Timestamp timestamp = Timestamp.valueOf(now);
-			thisExtractionTS = timestamp.getTime(); //returns a long
-			String current = String.valueOf(thisExtractionTS);
-			props.setProperty("prevExtraction", prevExtraction);
-			props.setProperty("thisExtraction", current);
-			props.setProperty("thisUpdate", current);
-
-			props.store(out, null);
-			out.close();
-			///////////
-		}
+		FileOutputStream out = new FileOutputStream(ctrlPath);
+		//set control.properties variables with global var values 
+		props.setProperty("prevExtraction", this.prevExtractionGV);
+		props.setProperty("thisExtraction", this.thisExtractionGV);
+		props.setProperty("thisUpdate", this.thisUpdateGV);
+		long longUpdateNEW = Long.parseLong(this.thisUpdateGV);
+		Date dNEW = new Date(longUpdateNEW);
+		System.out.println("NEW update on WIMEDS AdministrationUnit table done at: "+ dNEW);
+		props.store(out, null);
+		out.close();
+		///////////
+	}
 	
 	
     public void setProperties(String ctrlPath) throws IOException{
@@ -405,12 +430,7 @@ public organisationUnitsUpdate() {}
 		this.setScannerTRbatch(props.getProperty("batchTR"));
 		String startTimeCTRL="";
 		startTimeCTRL = props.getProperty("thisExtraction");
-		//
-		String update = props.getProperty("thisUpdate");
-		long longUpdate = Long.parseLong(update);
-		Date d = new Date(longUpdate);
-		System.out.println("last WIMEDS database update was made on: "+ d);
-		//
+
         in.close();
         
         Instant nowi = Instant.now();

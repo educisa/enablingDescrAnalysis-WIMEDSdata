@@ -13,19 +13,24 @@ public class updateDB_orgUnits {
 
 		orgUnitsUpdate.setProperties(ctrlPath);
 
-
 		//creates a scanner with TimeRange config
 		String scanner_id = orgUnitsUpdate.getTRScannerID();
 		
 		String SQLQuery = orgUnitsUpdate.updateData(scanner_id);
 		
-		if(SQLQuery=="")System.out.println("Everything up-to-date");
+		if(SQLQuery=="") {
+			System.out.println("Everything up-to-date");
+			//update extraction times
+			orgUnitsUpdate.setExtractionTimes(ctrlPath);
+		}
 		else {
 			String DBurl = orgUnitsUpdate.getDBurl();
 			String DBusr = orgUnitsUpdate.getDBusr();
 			String DBpsw = orgUnitsUpdate.getDBpwd();
-
 			orgUnitsUpdate.LoadInDB(SQLQuery, DBurl, DBusr, DBpsw);
+			
+			//update extraction times
+			orgUnitsUpdate.setExtractionTimes(ctrlPath);
 		}
 
 	}

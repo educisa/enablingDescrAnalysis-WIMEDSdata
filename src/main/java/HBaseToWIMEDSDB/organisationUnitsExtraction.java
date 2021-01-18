@@ -48,6 +48,7 @@ public organisationUnitsExtraction() {}
 	private String DBurl, DBusr, DBpwd, HBaseURL, scannerBatch;
 	long thisExtractionTS;
 	boolean b = true;
+	String thisExtractionGV, prevExtractionGV, thisFullExtractionGV; //are long (timestamps) stored string
 	
 	Instant start = Instant.now();
 	
@@ -79,29 +80,47 @@ public organisationUnitsExtraction() {}
 				return scanner_id;
 	}
 	
-	//call this function when extracting data=>update extraction times at props
-	public void setExtractionTimes(String ctrlPath) throws IOException {
+	//give value to global variables thisExtraction, prevExtraction, thisFullExtraction
+	public void setGVExtractionTimes(String ctrlPath) throws IOException {
 		////////////
 		FileInputStream in = new FileInputStream(ctrlPath);
 
 		Properties props = new Properties();
 		props.load(in);
-		String prevExtraction = props.getProperty("thisExtraction");
+		this.prevExtractionGV = props.getProperty("thisExtraction");
 		in.close();
-
-		FileOutputStream out = new FileOutputStream(ctrlPath);
 
 		LocalDateTime now = LocalDateTime.now();
 		Timestamp timestamp = Timestamp.valueOf(now);
 		thisExtractionTS = timestamp.getTime(); //returns a long
 		String current = String.valueOf(thisExtractionTS);
-		props.setProperty("prevExtraction", prevExtraction);
-		props.setProperty("thisExtraction", current);//var used for all kind of extraction(full extraction and update)
-		props.setProperty("thisFullExtraction", current);
+		this.thisExtractionGV = this.thisFullExtractionGV = current;
+		///////////	
+	}
+	
+	//set extraction times on control.properties file
+	public void setExtractionTimes(String ctrlPath) throws IOException {
+		///////////
+		FileInputStream in = new FileInputStream(ctrlPath);
+		Properties props = new Properties();
+		props.load(in);
+		String update = props.getProperty("thisFullExtraction");
+		long longUpdate = Long.parseLong(update);
+		Date d = new Date(longUpdate);
+		//System.out.println("last full extraction from AdministrationUnit HBase table was made on: "+ d);
+		in.close();
 
+		FileOutputStream out = new FileOutputStream(ctrlPath);
+		//set control.properties variables with global var values 
+		props.setProperty("prevExtraction", this.prevExtractionGV);
+		props.setProperty("thisExtraction", this.thisExtractionGV);
+		props.setProperty("thisFullExtraction", this.thisFullExtractionGV);
+		long longFullExtractionNEW = Long.parseLong(this.thisExtractionGV);
+		Date dNEW = new Date(longFullExtractionNEW);
+		System.out.println("NEW full extraction from AdministrationUnit HBase table done at: "+ dNEW);
 		props.store(out, null);
 		out.close();
-		//////////
+		///////////
 	}
 	
 	
@@ -270,8 +289,8 @@ public organisationUnitsExtraction() {}
 		System.out.println(calls + " scanner calls done");
 		System.out.println(extractedRows+" rows extracted");
 		deleteScanner(scanner_id);
-		//update extraction times after doing the extraction
-		setExtractionTimes(ctrlPath);
+		//set extraction times in global variables values, if the load in DB is successful, update in control.properties
+		setGVExtractionTimes(ctrlPath);
 		System.out.println("...QUERY ready...");
 		return SQLQuery; 
 	}
@@ -356,7 +375,7 @@ public organisationUnitsExtraction() {}
 		String fe = props.getProperty("thisFullExtraction");
 		long longFE = Long.parseLong(fe);
 		Date d = new Date(longFE);
-		System.out.println("last WIMEDS database Full Extraction was made on: "+ d);
+		System.out.println("last full extraction from AdministrationUnit HBase table was made on: "+ d);
 		//
 		
         in.close();

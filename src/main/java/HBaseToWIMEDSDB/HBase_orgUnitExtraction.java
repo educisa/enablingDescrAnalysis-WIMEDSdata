@@ -26,6 +26,8 @@ public class HBase_orgUnitExtraction {
 		//load to postgresDB
 		orgUnitsExtr.LoadInDB(SQLQuery, DBurl, DBusr, DBpsw);
 		
+		orgUnitsExtr.setExtractionTimes(ctrlPath);
+		
 	}
 
 }
