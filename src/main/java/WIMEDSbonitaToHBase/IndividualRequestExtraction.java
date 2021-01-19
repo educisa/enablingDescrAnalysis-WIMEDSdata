@@ -559,7 +559,7 @@ import okhttp3.ResponseBody;
 		String pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSS'Z'";
 		SimpleDateFormat ZDateFormat = new SimpleDateFormat(pattern);
 		String dateZ = ZDateFormat.format(new Date());
-		//store it in control.properties
+		//update thisWIMEDSExtractionDateTime in control.properties
 		props.setProperty("thisWIMEDSextractionDateTime", dateZ);
 
 		props.store(out, null);
