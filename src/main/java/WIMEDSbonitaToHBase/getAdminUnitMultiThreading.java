@@ -24,7 +24,7 @@ public class getAdminUnitMultiThreading {
 		JSONArray content = getAdminUnitMultiThreading.getContentArray();
 		//després el partim a trossos i cada thread crea la seva partialQuery
 		int THREADS =  Runtime.getRuntime().availableProcessors();
-		System.out.println(THREADS);
+		System.out.println("using "+ THREADS+" threads");
 		
 		//call ParallelPartialQueryGenerator
 		ParallelPartialQueryGenerator partialQueryGen = new ParallelPartialQueryGenerator(THREADS);
@@ -45,7 +45,7 @@ public class getAdminUnitMultiThreading {
 		Request request = new Request.Builder()
 				.url("http://localhost:8080/bonita/API/bdm/businessData/com.company.model.AdministrationUnit?q=find&p=0&c=106307")
 				.method("GET", null)
-				.addHeader("Cookie", "bonita.tenant=1; JSESSIONID=EE0F846065149DEDD717FF5B96C5F3BB; X-Bonita-API-Token=67c2f8d2-5306-46e5-a874-160ee7d69011; BOS_Locale=en")
+				.addHeader("Cookie", "bonita.tenant=1; JSESSIONID=422BD90BF1164956A49B2230C09A5B85; X-Bonita-API-Token=96c82428-876a-45a4-9a93-a0bb90b3190f; BOS_Locale=en")
 				.build();
 		Response response = client.newCall(request).execute();
 		
