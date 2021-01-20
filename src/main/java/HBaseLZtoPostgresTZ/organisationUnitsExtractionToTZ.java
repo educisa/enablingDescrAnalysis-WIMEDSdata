@@ -87,7 +87,7 @@ public organisationUnitsExtractionToTZ() {}
         
         Properties props = new Properties();
         props.load(in);
-        String prevExtraction = props.getProperty("thisExtraction");
+        String prevExtraction = props.getProperty("tz_thisExtractionOrgUnits");
         in.close();
         
         FileOutputStream out = new FileOutputStream(ctrlPath);
@@ -291,50 +291,6 @@ public organisationUnitsExtractionToTZ() {}
 				  .build();
 				Response response = client.newCall(request).execute();
 				response.body().close();
-	}
-	
-	
-	public void LoadInDB(String SQLQuery, String DBurl, String DBLogin, String DBPassword) {
-		Connection cn = null;
-		Statement st = null;	
-		System.out.println("...inserting data to DB...");
-		try {
-			//Step 1 : loading driver
-			Class.forName("org.postgresql.Driver");
-			//Step 2 : Connection
-			cn = DriverManager.getConnection(DBurl, DBLogin, DBPassword);
-			//Step 3 : creation statement
-			st = cn.createStatement();
-			// Step 4 execution SQLQuery
-			st.executeUpdate(SQLQuery);
-			System.out.println("Loading done successfully!");
-			
-			
-			Instant end = Instant.now();
-			LocalDateTime ldtStart = LocalDateTime.ofInstant(start, ZoneId.systemDefault());
-			LocalDateTime ldtEnd = LocalDateTime.ofInstant(end, ZoneId.systemDefault());
-			System.out.println("time spent: " + Duration.between(ldtStart, ldtEnd).toSeconds()+" seconds");
-			}
-		catch (SQLException e)
-		{
-			e.printStackTrace();
-		}
-		catch (ClassNotFoundException e)
-		{
-			e.printStackTrace();
-		}
-		finally 
-		{
-			try 
-			{
-				cn.close();
-				st.close();
-			}
-			catch (SQLException e)
-			{
-				e.printStackTrace();
-			}
-		}
 	}
 	
 	

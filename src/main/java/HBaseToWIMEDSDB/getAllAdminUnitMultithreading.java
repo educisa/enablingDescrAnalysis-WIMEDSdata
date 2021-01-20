@@ -18,7 +18,6 @@ public class getAllAdminUnitMultithreading {
 		orgUnitsExtr.setProperties(ctrlPath);
 
 		String scanner_id = orgUnitsExtr.getScannerId();
-		
 		//marribara el JSONArrayContent amb tots els AdminUnit encoded
 		JSONArray content = orgUnitsExtr.getDataFromHBase(scanner_id, ctrlPath);
 		System.out.println("lenght of the final content array: "+ content.length());
@@ -32,7 +31,7 @@ public class getAllAdminUnitMultithreading {
 		ParallelPartialQueryGenerator partialQueryGen = new ParallelPartialQueryGenerator(THREADS);
 		
 		String SQLQuery = "TRUNCATE TABLE AdministrationUnit;\n";
-		//put workers to work and get the result total query 
+		//put workers to work and get the result query 
 		SQLQuery += partialQueryGen.partialQueriesSum(content);
 		
 		String DBurl = orgUnitsExtr.getDBurl();

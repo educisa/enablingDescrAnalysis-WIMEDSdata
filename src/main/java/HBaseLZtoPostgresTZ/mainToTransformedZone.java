@@ -1,16 +1,11 @@
 package HBaseLZtoPostgresTZ;
 
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
+
 import java.io.UnsupportedEncodingException;
 import java.text.ParseException;
-import java.util.Properties;
 
 public class mainToTransformedZone {
-	
-	public mainToTransformedZone() {}
 	
 	//FULL RequestMedicines Process data extraction from HBase(landing zone) to TZ, needed for posterior analysis 
 	public static void main(String[] args) throws UnsupportedEncodingException, IOException, ParseException {

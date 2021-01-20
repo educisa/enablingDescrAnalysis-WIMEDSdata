@@ -42,7 +42,7 @@ import okhttp3.ResponseBody;
 		Request request = new Request.Builder()
 				.url("http://localhost:8080/bonita/API/bdm/businessData/com.company.model.Request?q=find&p=0&c=10000")
 				.method("GET", null)
-				.addHeader("Cookie", "JSESSIONID=56858118D61401C6AD276FD804315564; X-Bonita-API-Token=ce568c4c-0663-416c-8cee-3bb37ece7929;")
+				.addHeader("Cookie", "JSESSIONID=D4687E72BB9628C55F1B2817DC5486D2; X-Bonita-API-Token=55a9b14d-400d-4d04-ac1e-061405bca159;")
 				.build();
 		
 		Response response = client.newCall(request).execute();
@@ -64,7 +64,7 @@ import okhttp3.ResponseBody;
 				Request request = new Request.Builder()
 				  .url("http://localhost:8080/bonita/API/bdm/businessData/com.company.model.ShipmentR?q=find&p=0&c=10000")
 				  .method("GET", null)
-				  .addHeader("Cookie", "JSESSIONID=56858118D61401C6AD276FD804315564; X-Bonita-API-Token=ce568c4c-0663-416c-8cee-3bb37ece7929;")
+				  .addHeader("Cookie", "JSESSIONID=D4687E72BB9628C55F1B2817DC5486D2; X-Bonita-API-Token=55a9b14d-400d-4d04-ac1e-061405bca159;")
 				  .build();
 				Response response = client.newCall(request).execute();
 
@@ -84,7 +84,7 @@ import okhttp3.ResponseBody;
 				Request request = new Request.Builder()
 				  .url("http://localhost:8080/bonita/API/bdm/businessData/com.company.model.RequestDocument?q=find&p=0&c=10000")
 				  .method("GET", null)
-				  .addHeader("Cookie", "JSESSIONID=56858118D61401C6AD276FD804315564; X-Bonita-API-Token=ce568c4c-0663-416c-8cee-3bb37ece7929;")
+				  .addHeader("Cookie", "JSESSIONID=D4687E72BB9628C55F1B2817DC5486D2; X-Bonita-API-Token=55a9b14d-400d-4d04-ac1e-061405bca159;")
 				  .build();
 				Response response = client.newCall(request).execute();
 
@@ -106,7 +106,7 @@ import okhttp3.ResponseBody;
 				Request request = new Request.Builder()
 				  .url("http://localhost:8080/bonita/API/bdm/businessData/com.company.model.Disease?q=find&p=0&c=10000")
 				  .method("GET", null)
-				  .addHeader("Cookie", "JSESSIONID=56858118D61401C6AD276FD804315564; X-Bonita-API-Token=ce568c4c-0663-416c-8cee-3bb37ece7929;")
+				  .addHeader("Cookie", "JSESSIONID=D4687E72BB9628C55F1B2817DC5486D2; X-Bonita-API-Token=55a9b14d-400d-4d04-ac1e-061405bca159;")
 				  .build();
 				Response response = client.newCall(request).execute();
 
@@ -127,7 +127,7 @@ import okhttp3.ResponseBody;
 		Request request = new Request.Builder()
 				.url("http://localhost:8080/bonita/API/bdm/businessData/com.company.model.RequestStatus?q=find&p=0&c=10000")
 				.method("GET", null)
-				.addHeader("Cookie", "JSESSIONID=56858118D61401C6AD276FD804315564; X-Bonita-API-Token=ce568c4c-0663-416c-8cee-3bb37ece7929;")
+				.addHeader("Cookie", "JSESSIONID=D4687E72BB9628C55F1B2817DC5486D2; X-Bonita-API-Token=55a9b14d-400d-4d04-ac1e-061405bca159;")
 				.build();
 		Response response = client.newCall(request).execute();
 
@@ -147,7 +147,7 @@ import okhttp3.ResponseBody;
 		Request request = new Request.Builder()
 				.url("http://localhost:8080/bonita/API/bdm/businessData/com.company.model.MedicalSupply?q=find&p=0&c=10000")
 				.method("GET", null)
-				.addHeader("Cookie", "JSESSIONID=56858118D61401C6AD276FD804315564; X-Bonita-API-Token=ce568c4c-0663-416c-8cee-3bb37ece7929;")
+				.addHeader("Cookie", "JSESSIONID=D4687E72BB9628C55F1B2817DC5486D2; X-Bonita-API-Token=55a9b14d-400d-4d04-ac1e-061405bca159;")
 				.build();
 		Response response = client.newCall(request).execute();
 
@@ -168,7 +168,7 @@ import okhttp3.ResponseBody;
 		Request request = new Request.Builder()
 				.url("http://localhost:8080/bonita/API/bdm/businessData/com.company.model.Manufacturer?q=find&p=0&c=10000")
 				.method("GET", null)
-				.addHeader("Cookie", "JSESSIONID=56858118D61401C6AD276FD804315564; X-Bonita-API-Token=ce568c4c-0663-416c-8cee-3bb37ece7929;")
+				.addHeader("Cookie", "JSESSIONID=D4687E72BB9628C55F1B2817DC5486D2; X-Bonita-API-Token=55a9b14d-400d-4d04-ac1e-061405bca159;")
 				.build();
 		Response response = client.newCall(request).execute();
 

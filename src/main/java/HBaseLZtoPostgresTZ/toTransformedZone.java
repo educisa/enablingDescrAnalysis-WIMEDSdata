@@ -102,6 +102,22 @@ public class toTransformedZone {
 		response.body().close();
 	}
 	
+	
+	//using multithreading
+	public String getRequestQuery(String ctrlPath) throws InterruptedException, IOException, ParseException {
+		String requestData = getRequestsFromHBase(ctrlPath);
+		String SQLQuery = "TRUNCATE TABLE requests;\n";
+		JSONArray content = new JSONArray(requestData);
+		int THREADS =  Runtime.getRuntime().availableProcessors();
+		System.out.println("using "+ THREADS+" threads, generating queries");
+		//call ParallelPartialQueryGenerator
+		ParallelPartialQueryGenerator partialQueryGen = new ParallelPartialQueryGenerator(THREADS);
+		//put workers to work and get the result query 
+		SQLQuery += partialQueryGen.partialQueriesSum(content, "Request");
+		//System.out.println(SQLQuery);
+		return SQLQuery;
+	}
+	
 	public String getRequestsFromHBase(String ctrlPath) throws IOException, ParseException {
 
 		OkHttpClient client = new OkHttpClient().newBuilder()
@@ -124,6 +140,7 @@ public class toTransformedZone {
 		} catch (IOException ex) {
 			System.out.println("exception");
 		}
+		System.out.println(completeRowKey);
 	
 		response.body().close();
 		//update extraction times after doing the extraction, already done when extracting AdminUnits
@@ -193,7 +210,7 @@ public String getDiseaseFromHBase(String ctrlPath) throws IOException, ParseExce
 	}
 
 public String getRequestStatusFromHBase(String ctrlPath) throws IOException, ParseException {
-	
+
 	OkHttpClient client = new OkHttpClient().newBuilder()
 			.build();
 	Request request = new Request.Builder()
@@ -201,10 +218,10 @@ public String getRequestStatusFromHBase(String ctrlPath) throws IOException, Par
 			.method("GET", null)
 			.build();
 	Response response = client.newCall(request).execute();
-	
+
 	String msg = response.message();
 	Integer statusCode = response.code();
-	
+
 	String content = "";
 
 	Path path = Paths.get("outputRequestStatus.txt");
@@ -222,7 +239,7 @@ public String getRequestStatusFromHBase(String ctrlPath) throws IOException, Par
 }
 
 public String getManufacturerFromHBase(String ctrlPath) throws IOException, ParseException {
-	
+
 	OkHttpClient client = new OkHttpClient().newBuilder()
 			.build();
 	Request request = new Request.Builder()
@@ -230,10 +247,10 @@ public String getManufacturerFromHBase(String ctrlPath) throws IOException, Pars
 			.method("GET", null)
 			.build();
 	Response response = client.newCall(request).execute();
-	
+
 	String msg = response.message();
 	Integer statusCode = response.code();
-	
+
 	String content = "";
 
 	Path path = Paths.get("outputManufacturer.txt");
@@ -252,7 +269,7 @@ public String getManufacturerFromHBase(String ctrlPath) throws IOException, Pars
 
 
 public String getMedicalSupplyFromHBase(String ctrlPath) throws IOException, ParseException {
-	
+
 	OkHttpClient client = new OkHttpClient().newBuilder()
 			.build();
 	Request request = new Request.Builder()
@@ -260,10 +277,10 @@ public String getMedicalSupplyFromHBase(String ctrlPath) throws IOException, Par
 			.method("GET", null)
 			.build();
 	Response response = client.newCall(request).execute();
-	
+
 	String msg = response.message();
 	Integer statusCode = response.code();
-	
+
 	String content = "";
 
 	Path path = Paths.get("outputMedicalSupply.txt");
@@ -279,8 +296,9 @@ public String getMedicalSupplyFromHBase(String ctrlPath) throws IOException, Par
 	//setExtractionTimes(ctrlPath);
 	return content; 
 }
-
-
+	
+	
+	
 	public String getRequestsQuery(String requestData) {
 		System.out.println("...generating SQLQuery from HBase data...");
 		String SQLQuery = "TRUNCATE TABLE requests;\n";
