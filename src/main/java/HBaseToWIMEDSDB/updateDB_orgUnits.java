@@ -5,7 +5,9 @@ import java.io.IOException;
 import java.util.Properties;
 
 public class updateDB_orgUnits {
+	
 	public static void main(String[] args) throws IOException, Exception{
+		System.out.println("··application started··");
 		organisationUnitsUpdate orgUnitsUpdate = new organisationUnitsUpdate();
 	
 		String rootPath = Thread.currentThread().getContextClassLoader().getResource("").getPath();
@@ -32,7 +34,7 @@ public class updateDB_orgUnits {
 			//update extraction times
 			orgUnitsUpdate.setExtractionTimes(ctrlPath);
 		}
-
+		System.out.println("··application finished··");
 	}
 
 }

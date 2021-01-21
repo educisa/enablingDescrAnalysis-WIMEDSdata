@@ -27,25 +27,26 @@ import okhttp3.ResponseBody;
 
 public class ReqMedProcessMetadataExtraction {
 
-	String jsessionid;
+	String jsessionid, bonitaToken;
 	public ReqMedProcessMetadataExtraction(){}
 	
 	//get LastUpdated of RequestMedicine Process from WIMEDS(through Bonita bpm REST API)
 	public void getLastUpdatedDate(String ctrlPath) throws IOException {
 		
 		String lastUpdateDate = "";
-		//read jsessionid from control.properties for Bonita REST API call
-		Properties prop = new Properties();
-		
-		try {
-			InputStream input = new FileInputStream(ctrlPath);
-			// load a properties file
-			prop.load(input);
-			// get the property value and print it out
-			jsessionid = prop.getProperty("jsessionid");
-		} catch (IOException ex) {
-			ex.printStackTrace();
-		}
+		////////////
+		//read jsessionid and bonitaToken from control.properties for Bonita REST API call
+		FileInputStream in = new FileInputStream(ctrlPath);
+
+		Properties props = new Properties();
+		props.load(in);
+		jsessionid = props.getProperty("jsessionid");
+		bonitaToken = props.getProperty("bonitaToken");
+		System.out.println(jsessionid);
+		System.out.println(bonitaToken);
+		//JSESSIONID and X-Bonita-API-Token still not parametrized...I have errors getting the cookie
+		in.close();
+		/////////////
 		
 		try {
 		//Bonita REST API call
@@ -54,7 +55,7 @@ public class ReqMedProcessMetadataExtraction {
 		Request request = new Request.Builder()
 				.url("http://localhost:8080/bonita/API/bpm/process?p=0&c=100&f=name=REQ_RequestMedicines")
 				.method("GET", null)
-				.addHeader("Cookie", "JSESSIONID=D4687E72BB9628C55F1B2817DC5486D2; X-Bonita-API-Token=55a9b14d-400d-4d04-ac1e-061405bca159;")
+				.addHeader("Cookie", "JSESSIONID="+jsessionid+"; X-Bonita-API-Token="+bonitaToken+";")
 				.build();
 		Response response = client.newCall(request).execute();
 		

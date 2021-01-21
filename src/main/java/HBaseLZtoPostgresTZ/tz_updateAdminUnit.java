@@ -44,6 +44,7 @@ public class tz_updateAdminUnit {
 	private String DBurl, DBusr, DBpwd, HBaseURL, scannerTRbatch, bodyScanner;
 	long thisExtractionTS;
 	private List<String> attr;
+	String thisExtractionGV, prevExtractionGV, thisUpdateGV; //are long stored as string
 	
 	Instant start = Instant.now();
 	
@@ -84,7 +85,7 @@ public class tz_updateAdminUnit {
         
         Properties props = new Properties();
         props.load(in);
-        String prevExtraction = props.getProperty("thisExtraction");
+        String prevExtraction = props.getProperty("tz_thisExtractionOrgUnits");
         in.close();
         
         FileOutputStream out = new FileOutputStream(ctrlPath);
@@ -93,17 +94,39 @@ public class tz_updateAdminUnit {
 		Timestamp timestamp = Timestamp.valueOf(now);
 		thisExtractionTS = timestamp.getTime(); //returns a long
 		String current = String.valueOf(thisExtractionTS);
-		props.setProperty("tz_prevExtractionOrgUnits", prevExtraction);
-		props.setProperty("tz_thisExtractionOrgUnits", current);
+		props.setProperty("tz_prevExtractionOrgUnits", prevExtractionGV);
+		props.setProperty("tz_thisExtractionOrgUnits", thisExtractionGV);
+		props.setProperty("tz_lastUpdateOrgUnits", thisUpdateGV);
 
         props.store(out, null);
         out.close();
 		//////////
 	}
+	
+	//give value to global variables thisExtraction, prevExtraction, thisUpdate
+	public void setGVExtractionTimes(String ctrlPath) throws IOException {
+		////////////
+		FileInputStream in = new FileInputStream(ctrlPath);
+
+		Properties props = new Properties();
+		props.load(in);
+		this.prevExtractionGV = props.getProperty("tz_thisExtractionOrgUnits");
+		in.close();
+
+		LocalDateTime now = LocalDateTime.now();
+		Timestamp timestamp = Timestamp.valueOf(now);
+		thisExtractionTS = timestamp.getTime(); //returns a long
+		String current = String.valueOf(thisExtractionTS);
+		this.thisExtractionGV = this.thisUpdateGV = current;
+		///////////	
+	}
     
     public String updateData(String scanner_id) throws IOException {
 		String rootPath = Thread.currentThread().getContextClassLoader().getResource("").getPath();
 		String ctrlPath = rootPath + "control.properties";
+    	//set extraction times in global variables values, if load in DB is successful, update in control.properties
+		setGVExtractionTimes(ctrlPath);
+		
 		int updatedRows = 0;
     
     	Boolean finishScan = false;
@@ -367,7 +390,7 @@ public class tz_updateAdminUnit {
 		this.setHBaseURL(props.getProperty("url"));
 		this.setScannerTRbatch(props.getProperty("batchTR"));
 		String startTimeCTRL="";
-		startTimeCTRL = props.getProperty("tz_thisExtractionOrgUnits");
+		startTimeCTRL = props.getProperty("tz_thisExtractionOrgUnits");//tz_lastUpdateOrgUnits would be useful too
         in.close();
         
         Instant nowi = Instant.now();

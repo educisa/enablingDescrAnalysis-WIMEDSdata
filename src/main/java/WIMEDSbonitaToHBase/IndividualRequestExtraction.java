@@ -42,7 +42,7 @@ import okhttp3.ResponseBody;
 		Request request = new Request.Builder()
 				.url("http://localhost:8080/bonita/API/bdm/businessData/com.company.model.Request?q=find&p=0&c=10000")
 				.method("GET", null)
-				.addHeader("Cookie", "JSESSIONID=D4687E72BB9628C55F1B2817DC5486D2; X-Bonita-API-Token=55a9b14d-400d-4d04-ac1e-061405bca159;")
+				.addHeader("Cookie", "JSESSIONID="+jsessionid+"; X-Bonita-API-Token="+bonitaToken+";")
 				.build();
 		
 		Response response = client.newCall(request).execute();
@@ -64,7 +64,7 @@ import okhttp3.ResponseBody;
 				Request request = new Request.Builder()
 				  .url("http://localhost:8080/bonita/API/bdm/businessData/com.company.model.ShipmentR?q=find&p=0&c=10000")
 				  .method("GET", null)
-				  .addHeader("Cookie", "JSESSIONID=D4687E72BB9628C55F1B2817DC5486D2; X-Bonita-API-Token=55a9b14d-400d-4d04-ac1e-061405bca159;")
+				  .addHeader("Cookie", "JSESSIONID="+jsessionid+"; X-Bonita-API-Token="+bonitaToken+";")
 				  .build();
 				Response response = client.newCall(request).execute();
 
@@ -84,7 +84,7 @@ import okhttp3.ResponseBody;
 				Request request = new Request.Builder()
 				  .url("http://localhost:8080/bonita/API/bdm/businessData/com.company.model.RequestDocument?q=find&p=0&c=10000")
 				  .method("GET", null)
-				  .addHeader("Cookie", "JSESSIONID=D4687E72BB9628C55F1B2817DC5486D2; X-Bonita-API-Token=55a9b14d-400d-4d04-ac1e-061405bca159;")
+				  .addHeader("Cookie", "JSESSIONID="+jsessionid+"; X-Bonita-API-Token="+bonitaToken+";")
 				  .build();
 				Response response = client.newCall(request).execute();
 
@@ -106,7 +106,7 @@ import okhttp3.ResponseBody;
 				Request request = new Request.Builder()
 				  .url("http://localhost:8080/bonita/API/bdm/businessData/com.company.model.Disease?q=find&p=0&c=10000")
 				  .method("GET", null)
-				  .addHeader("Cookie", "JSESSIONID=D4687E72BB9628C55F1B2817DC5486D2; X-Bonita-API-Token=55a9b14d-400d-4d04-ac1e-061405bca159;")
+				  .addHeader("Cookie", "JSESSIONID="+jsessionid+"; X-Bonita-API-Token="+bonitaToken+";")
 				  .build();
 				Response response = client.newCall(request).execute();
 
@@ -127,7 +127,7 @@ import okhttp3.ResponseBody;
 		Request request = new Request.Builder()
 				.url("http://localhost:8080/bonita/API/bdm/businessData/com.company.model.RequestStatus?q=find&p=0&c=10000")
 				.method("GET", null)
-				.addHeader("Cookie", "JSESSIONID=D4687E72BB9628C55F1B2817DC5486D2; X-Bonita-API-Token=55a9b14d-400d-4d04-ac1e-061405bca159;")
+				.addHeader("Cookie", "JSESSIONID="+jsessionid+"; X-Bonita-API-Token="+bonitaToken+";")
 				.build();
 		Response response = client.newCall(request).execute();
 
@@ -147,7 +147,7 @@ import okhttp3.ResponseBody;
 		Request request = new Request.Builder()
 				.url("http://localhost:8080/bonita/API/bdm/businessData/com.company.model.MedicalSupply?q=find&p=0&c=10000")
 				.method("GET", null)
-				.addHeader("Cookie", "JSESSIONID=D4687E72BB9628C55F1B2817DC5486D2; X-Bonita-API-Token=55a9b14d-400d-4d04-ac1e-061405bca159;")
+				.addHeader("Cookie", "JSESSIONID="+jsessionid+"; X-Bonita-API-Token="+bonitaToken+";")
 				.build();
 		Response response = client.newCall(request).execute();
 
@@ -168,7 +168,7 @@ import okhttp3.ResponseBody;
 		Request request = new Request.Builder()
 				.url("http://localhost:8080/bonita/API/bdm/businessData/com.company.model.Manufacturer?q=find&p=0&c=10000")
 				.method("GET", null)
-				.addHeader("Cookie", "JSESSIONID=D4687E72BB9628C55F1B2817DC5486D2; X-Bonita-API-Token=55a9b14d-400d-4d04-ac1e-061405bca159;")
+				.addHeader("Cookie", "JSESSIONID="+jsessionid+"; X-Bonita-API-Token="+bonitaToken+";")
 				.build();
 		Response response = client.newCall(request).execute();
 
@@ -539,7 +539,7 @@ import okhttp3.ResponseBody;
 
         //props.setProperty("prevExtraction", prev);
         props.setProperty("completeRowKey", crk);
-
+        System.out.println("this is the row key: "+ completeRowKey);
         props.store(out, null);
         out.close();
 		///////////
@@ -553,6 +553,7 @@ import okhttp3.ResponseBody;
 		Properties props = new Properties();
 		props.load(in);
 		String prev = props.getProperty("thisWIMEDSextractionDateTime");
+		System.out.println("last WIMEDS DB extraction was made on: "+ prev);
 		in.close();
 		FileOutputStream out = new FileOutputStream(ctrlPath);
 		//calcula new thisWIMEDSextractionDateTime
@@ -561,13 +562,13 @@ import okhttp3.ResponseBody;
 		String dateZ = ZDateFormat.format(new Date());
 		//update thisWIMEDSExtractionDateTime in control.properties
 		props.setProperty("thisWIMEDSextractionDateTime", dateZ);
-
+		System.out.println("this WIMEDS DB extraction has been done at: "+ dateZ);
 		props.store(out, null);
 		out.close();
 	}
 	
 	
-	public void setGlobalVars(String ctrlPath) throws IOException {
+	public void setProps(String ctrlPath) throws IOException {
 		//////////////
 
         FileInputStream in = new FileInputStream(ctrlPath);
@@ -578,6 +579,8 @@ import okhttp3.ResponseBody;
 		setFamily(props.getProperty("family1"));
 		setRowKeyBase(props.getProperty("rowKeyBase"));
 		setMetadataVersion(props.getProperty("metadataVersion"));
+		setJSESSIONID(props.getProperty("jsessionid"));
+		setBonitaToken(props.getProperty("bonitaToken"));
 		//JSESSIONID and X-Bonita-API-Token still not parametrized...I have errors getting the cookie
         in.close();
 		/////////////

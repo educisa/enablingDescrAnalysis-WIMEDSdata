@@ -126,6 +126,8 @@ public organisationUnitsExtraction() {}
 	
 	//sense paremtriztar attr amb tots GETs
 	public String getDataFromHBase(String scanner_id, String ctrlPath) throws IOException {
+		//set extraction times in global variables values, if load in DB is successful, update in control.properties
+		setGVExtractionTimes(ctrlPath);
 		System.out.println("...scanner started...");
 		Integer calls = 0;
 		Integer extractedRows = 0;
@@ -289,8 +291,6 @@ public organisationUnitsExtraction() {}
 		System.out.println(calls + " scanner calls done");
 		System.out.println(extractedRows+" rows extracted");
 		deleteScanner(scanner_id);
-		//set extraction times in global variables values, if the load in DB is successful, update in control.properties
-		setGVExtractionTimes(ctrlPath);
 		System.out.println("...QUERY ready...");
 		return SQLQuery; 
 	}

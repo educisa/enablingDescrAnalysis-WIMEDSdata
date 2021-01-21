@@ -123,16 +123,6 @@ public class HbaseUtilities {
 			} catch (IOException ex) {
 				ex.printStackTrace();
 			}
-			///////////////////
-
-			////////////////////
-			/*
-	            File configFile = new File(fileName);
-	            FileReader reader = new FileReader(configFile);
-	            Properties props = new Properties();
-	            props.load(reader);
-	            this.setTableName(props.getProperty("datatableName"));
-	            this.setFamily(props.getProperty("family1"));*/
 
 
 		} catch ( Exception e){

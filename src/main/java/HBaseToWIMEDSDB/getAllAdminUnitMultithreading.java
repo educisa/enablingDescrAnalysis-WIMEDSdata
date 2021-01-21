@@ -8,7 +8,7 @@ public class getAllAdminUnitMultithreading {
 	
 	
 	public static void main(String[] args) throws IOException, Exception{
-
+		System.out.println("··application started··");
 		fullextractAdminUnitmultiThreading  orgUnitsExtr = new fullextractAdminUnitmultiThreading();
 
 		String rootPath = Thread.currentThread().getContextClassLoader().getResource("").getPath();
@@ -18,12 +18,9 @@ public class getAllAdminUnitMultithreading {
 		orgUnitsExtr.setProperties(ctrlPath);
 
 		String scanner_id = orgUnitsExtr.getScannerId();
-		//marribara el JSONArrayContent amb tots els AdminUnit encoded
+
 		JSONArray content = orgUnitsExtr.getDataFromHBase(scanner_id, ctrlPath);
 		System.out.println("lenght of the final content array: "+ content.length());
-		//ara hem hauré de repartir aquest JSONArray amb tants threads com sigui possible
-		//cada un d'ells haurà de fer la feina de decode i crear les queries corresponents per cada JSONObject dins el JSONArray parcial que li toqui
-		//després el partim a trossos i cada thread crea la seva partialQuery
 		int THREADS =  Runtime.getRuntime().availableProcessors();
 		System.out.println("using "+ THREADS+" threads");
 

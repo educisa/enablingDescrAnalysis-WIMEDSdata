@@ -36,13 +36,13 @@ public class mainToTransformedZone {
 		String scanner_id = orgUnitsExtr.getScannerId();
 		String OrgUnitSQLQuery = orgUnitsExtr.getDataFromHBase(scanner_id, ctrlPath);
 		ttz.LoadInDB(OrgUnitSQLQuery, tz_DBurl, tz_DBusr, tz_DBpsw);
+		orgUnitsExtr.setExtractionTimes(ctrlPath);
 		
 		
 		//Requests
 		String reqContent = ttz.getRequestsFromHBase(ctrlPath);
 		String reqSQLQuery = ttz.getRequestsQuery(reqContent);
 		ttz.LoadInDB(reqSQLQuery, tz_DBurl, tz_DBusr, tz_DBpsw);
-		
 		
 		//shipmentR
 		String shipContent = ttz.getshipmentRFromHBase(ctrlPath);

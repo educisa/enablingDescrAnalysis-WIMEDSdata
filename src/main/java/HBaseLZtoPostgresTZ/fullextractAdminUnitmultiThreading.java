@@ -67,6 +67,11 @@ public fullextractAdminUnitmultiThreading() {}
 	
 	//returns a JSONArray containing all AdminUnit, encoded
 	public JSONArray getDataFromHBase(String scanner_id) throws IOException {
+		
+		String rootPath = Thread.currentThread().getContextClassLoader().getResource("").getPath();
+		String ctrlPath = rootPath + "control.properties";
+		//set extraction times in global variables values, if the load in DB is successful, update in control.properties
+		setGVExtractionTimes(ctrlPath);
 		System.out.println("...scanner started...");
 		JSONArray JSONArrayContent = new JSONArray();
 		Integer calls = 0;
@@ -99,11 +104,6 @@ public fullextractAdminUnitmultiThreading() {}
 			}
 			
 			else {
-				/*tindrem el Row[] que segur que es un JSONArray, ho guadro a JSONArrayContent i el retorno
-			puc anar acumulant tots els Row[] en un mateix JSONArray i després passar-ho als workers
-			aixi el mecanisme de while(statusCode != 200) i acabar el scanner seria el mateix
-			en aquesta funcio de getDataFromHBase seria unicament anar afegint els array Row[] recollits en cada crida
-			dins un JSONArrayContent que els recollis tots. Aquest será el que després repartirem als workers.*/
 
 				//agafem el Row[], esta a dins d'un JSONObject gegant {}
 				JSONObject JSONObjectContent = new JSONObject(content);
@@ -119,8 +119,6 @@ public fullextractAdminUnitmultiThreading() {}
 		}
 		System.out.println("extractedRows: "+extractedRows);
 		deleteScanner(scanner_id);
-		//set extraction times in global variables values, if the load in DB is successful, update in control.properties
-		//setGVExtractionTimes(ctrlPath);
 		return JSONArrayContent;
 	}
 			
@@ -159,10 +157,29 @@ public fullextractAdminUnitmultiThreading() {}
 		String current = String.valueOf(thisExtractionTS);
 		props.setProperty("tz_prevExtractionOrgUnits", prevExtraction);
 		props.setProperty("tz_thisExtractionOrgUnits", current);
+		props.setProperty("tz_lastFullExtractionOrgUnits", current);
 
         props.store(out, null);
         out.close();
 		//////////
+	}
+	
+	//give value to global variables thisExtraction, prevExtraction, thisFullExtraction
+	public void setGVExtractionTimes(String ctrlPath) throws IOException {
+		////////////
+		FileInputStream in = new FileInputStream(ctrlPath);
+
+		Properties props = new Properties();
+		props.load(in);
+		this.prevExtractionGV = props.getProperty("tz_thisExtractionOrgUnits");
+		in.close();
+
+		LocalDateTime now = LocalDateTime.now();
+		Timestamp timestamp = Timestamp.valueOf(now);
+		thisExtractionTS = timestamp.getTime(); //returns a long
+		String current = String.valueOf(thisExtractionTS);
+		this.thisExtractionGV = this.thisFullExtractionGV = current;
+		///////////	
 	}
 	
 	

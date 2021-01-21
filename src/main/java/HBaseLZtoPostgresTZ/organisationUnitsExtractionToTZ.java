@@ -49,6 +49,7 @@ public organisationUnitsExtractionToTZ() {}
 	long thisExtractionTS;
 	private List<String> attr;
 	boolean b = true;
+	String thisExtractionGV, prevExtractionGV, thisFullExtractionGV; //are long (timestamps) stored string
 	
 	Instant start = Instant.now();
 	
@@ -80,6 +81,24 @@ public organisationUnitsExtractionToTZ() {}
 				return scanner_id;
 	}
 	
+	//give value to global variables thisExtraction, prevExtraction, thisFullExtraction
+	public void setGVExtractionTimes(String ctrlPath) throws IOException {
+		////////////
+		FileInputStream in = new FileInputStream(ctrlPath);
+
+		Properties props = new Properties();
+		props.load(in);
+		this.prevExtractionGV = props.getProperty("tz_thisExtractionOrgUnits");
+		in.close();
+
+		LocalDateTime now = LocalDateTime.now();
+		Timestamp timestamp = Timestamp.valueOf(now);
+		thisExtractionTS = timestamp.getTime(); //returns a long
+		String current = String.valueOf(thisExtractionTS);
+		this.thisExtractionGV = this.thisFullExtractionGV = current;
+		///////////	
+	}
+	
 	//call this function when extracting data=>update extraction times at props
 	public void setExtractionTimes(String ctrlPath) throws IOException {
 		///////////
@@ -96,8 +115,9 @@ public organisationUnitsExtractionToTZ() {}
 		Timestamp timestamp = Timestamp.valueOf(now);
 		thisExtractionTS = timestamp.getTime(); //returns a long
 		String current = String.valueOf(thisExtractionTS);
-		props.setProperty("tz_prevExtractionOrgUnits", prevExtraction);
-		props.setProperty("tz_thisExtractionOrgUnits", current);
+		props.setProperty("tz_prevExtractionOrgUnits", prevExtractionGV);
+		props.setProperty("tz_thisExtractionOrgUnits", thisExtractionGV);
+		props.setProperty("tz_lastFullExtractionOrgUnits", thisFullExtractionGV);
 
         props.store(out, null);
         out.close();
@@ -107,6 +127,8 @@ public organisationUnitsExtractionToTZ() {}
 	
 	//sense paremtriztar attr amb tots GETs
 	public String getDataFromHBase(String scanner_id, String ctrlPath) throws IOException {
+		//set extraction times in global variables values, if load in DB is successful, update in control.properties
+		setGVExtractionTimes(ctrlPath);
 		System.out.println("...scanner started...");
 		Integer calls = 0;
 		Integer extractedRows = 0;
@@ -269,8 +291,6 @@ public organisationUnitsExtractionToTZ() {}
 		
 		System.out.println(extractedRows+" rows extracted");
 		deleteScanner(scanner_id);
-		//update extraction times after doing the extraction
-		setExtractionTimes(ctrlPath);
 		System.out.println(calls+"scanner calls done");
 		System.out.println("...QUERY ready...");
 		return SQLQuery; 

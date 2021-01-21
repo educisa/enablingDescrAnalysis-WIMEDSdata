@@ -116,6 +116,8 @@ public class fullextractAdminUnitmultiThreading {
 	
 	//returns a JSONArray containing all AdminUnit, encoded
 	public JSONArray getDataFromHBase(String scanner_id, String ctrlPath) throws IOException {
+		//set extraction times in global variables values, if the load in DB is successful, update in control.properties
+		setGVExtractionTimes(ctrlPath);
 		System.out.println("...scanner started...");
 		JSONArray JSONArrayContent = new JSONArray();
 		Integer calls = 0;
@@ -129,7 +131,7 @@ public class fullextractAdminUnitmultiThreading {
 			Request request = new Request.Builder()
 					.url(HBaseURL+"/scanner/"+scanner_id)
 					.method("GET", null)
-					.addHeader("Accept", "application/json")//em retornara el Row[]
+					.addHeader("Accept", "application/json")
 					.build();
 			Response response = client.newCall(request).execute();
 			ResponseBody body = response.body();
@@ -148,13 +150,7 @@ public class fullextractAdminUnitmultiThreading {
 			}
 			
 			else {
-				/*tindrem el Row[] que segur que es un JSONArray, ho guadro a JSONArrayContent i el retorno
-			puc anar acumulant tots els Row[] en un mateix JSONArray i després passar-ho als workers
-			aixi el mecanisme de while(statusCode != 200) i acabar el scanner seria el mateix
-			en aquesta funcio de getDataFromHBase seria unicament anar afegint els array Row[] recollits en cada crida
-			dins un JSONArrayContent que els recollis tots. Aquest será el que després repartirem als workers.*/
-
-				//agafem el Row[], esta a dins d'un JSONObject gegant {}
+				
 				JSONObject JSONObjectContent = new JSONObject(content);
 
 				JSONArray JSONArrayRows = (JSONArray) JSONObjectContent.get("Row");
@@ -168,8 +164,6 @@ public class fullextractAdminUnitmultiThreading {
 		}
 		System.out.println("extractedRows: "+extractedRows);
 		deleteScanner(scanner_id);
-		//set extraction times in global variables values, if the load in DB is successful, update in control.properties
-		setGVExtractionTimes(ctrlPath);
 		return JSONArrayContent;
 	}
 			

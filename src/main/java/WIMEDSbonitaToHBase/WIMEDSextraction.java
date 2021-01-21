@@ -69,15 +69,17 @@ public class WIMEDSextraction {
 		 * si lastUpdated<thisWIMEDSextractionDateTime llavors només s'extreu la data(i només canvian el DateTime de la key).
 		 */
 		
+		//call to RESTAuth and save JSESSIONID and X-Bonita-API-Token in control.properties
+		
+		IndividualRequestExtraction ire = new IndividualRequestExtraction();
+		ire.setProps(ctrlPath);
+		
 		ReqMedProcessMetadataExtraction rm= new ReqMedProcessMetadataExtraction();
 		rm.getLastUpdatedDate(ctrlPath);
 		boolean metadataUpdateNeeded = rm.updatemeta(ctrlPath);
 		
 		/*NOT IMPLEMENTED:
 		{ if(metadataUpdateNeeded)=>extract metadata from WIMEDS DB(bonita) and update it in HBase WICD }*/
-		
-		IndividualRequestExtraction ire = new IndividualRequestExtraction();
-		ire.setGlobalVars(ctrlPath);
 		
 		ire.exportRequests();
 		
@@ -91,6 +93,7 @@ public class WIMEDSextraction {
 		ire.exportMedicalSupply();
 		ire.exportManufacturer();
 		
+		//update extraction Date Time
 		ire.updateWIMEDSextractionDateTime(ctrlPath);
 
 	}

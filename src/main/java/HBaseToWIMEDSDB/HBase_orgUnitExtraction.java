@@ -7,7 +7,7 @@ import java.util.Properties;
 
 public class HBase_orgUnitExtraction {
 	public static void main(String[] args) throws IOException, Exception{
-		
+		System.out.println("··application started··");
 		organisationUnitsExtraction orgUnitsExtr = new organisationUnitsExtraction();
 		
 		String rootPath = Thread.currentThread().getContextClassLoader().getResource("").getPath();
@@ -27,7 +27,7 @@ public class HBase_orgUnitExtraction {
 		orgUnitsExtr.LoadInDB(SQLQuery, DBurl, DBusr, DBpsw);
 		
 		orgUnitsExtr.setExtractionTimes(ctrlPath);
-		
+		System.out.println("··application finished··");
 	}
 
 }

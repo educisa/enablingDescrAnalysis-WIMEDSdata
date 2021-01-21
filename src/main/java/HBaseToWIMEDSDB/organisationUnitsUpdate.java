@@ -112,8 +112,11 @@ public organisationUnitsUpdate() {}
     
 	
     public String updateData(String scanner_id) throws IOException {
+    	
 		String rootPath = Thread.currentThread().getContextClassLoader().getResource("").getPath();
 		String ctrlPath = rootPath + "control.properties";
+    	//set extraction times in global variables values, if load in DB is successful, update in control.properties
+		setGVExtractionTimes(ctrlPath);
 		int updatedRows = 0;
     	Boolean finishScan = false;
     	String SQLQueryUpdate = "";
@@ -306,8 +309,6 @@ public organisationUnitsUpdate() {}
     	}
 		
 		deleteScanner(scanner_id);
-		//update thisExtraction timestamp with update timestamp(now)
-		setGVExtractionTimes(ctrlPath);
 		return SQLQueryUpdate;	
     }
 
