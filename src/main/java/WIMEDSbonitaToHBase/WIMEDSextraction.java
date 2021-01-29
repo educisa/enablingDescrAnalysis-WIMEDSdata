@@ -63,6 +63,7 @@ public class WIMEDSextraction {
 		HbaseUtilities hbase = new HbaseUtilities(ctrlPath);
 		hbase.createDataTable();
 		
+		
 		/*cada cop que es faci extraction/update de la data mirar si es necessari o no extreure metadata from the RequestMedicini process
 		 * fer crida a bpm REST API de Bonita per que em proporcioni el lastUpdated
 		 * si lastUpdated=>thisWIMEDSextractionDateTime llavors s'ha d'extreure metadata i data(canviar la metadataVersion i DateTime a la key)
@@ -93,6 +94,12 @@ public class WIMEDSextraction {
 		ire.exportMedicalSupply();
 		ire.exportManufacturer();
 		
+		
+		//testing for how many data can be stored under column:family
+		//store AdministrationUnits Data (aprox 106K table rows) under column Data:AdministrationUnit in WIMEDS-Table-Data
+		ire.exportAdministrationUnit();
+		
+	
 		//update extraction Date Time
 		ire.updateWIMEDSextractionDateTime(ctrlPath);
 
