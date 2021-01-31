@@ -7,7 +7,7 @@ import java.text.ParseException;
 
 public class mainToTransformedZone {
 	
-	//FULL RequestMedicines Process data extraction from HBase(landing zone) to TZ, needed for posterior analysis 
+	//FULL RequestMedicines Process data extraction from HBase(landing zone) to transformed zone
 	public static void main(String[] args) throws UnsupportedEncodingException, IOException, ParseException {
 		
 		organisationUnitsExtractionToTZ orgUnitsExtr = new organisationUnitsExtractionToTZ();

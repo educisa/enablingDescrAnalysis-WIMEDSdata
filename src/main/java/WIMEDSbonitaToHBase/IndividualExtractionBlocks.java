@@ -61,7 +61,6 @@ public class IndividualExtractionBlocks {
 
 		JSONArray JSONArray = new JSONArray(bodyString); 
 		putData(JSONArray, WIMEDStableName);
-
 	}
 	
 	
@@ -101,7 +100,7 @@ public class IndividualExtractionBlocks {
 			for(int i = start; i <= end; ++i) {
 				if(i == start)System.out.println("start => "+i);
 				if(i == end)System.out.println("end => "+i);
-				partialJSONArray.put(contentJSONArray.get(i).toString());
+				partialJSONArray.put(contentJSONArray.getJSONObject(i));
 			}
 			System.out.println("el partial JSONArray conté: "+partialJSONArray.length()+" JSONObjects");
 			sum+=partialJSONArray.length();
@@ -138,6 +137,7 @@ public class IndividualExtractionBlocks {
 		String msg = response.message();
 		Integer statusCode = response.code();
 		System.out.println("msg: "+msg+" statusCode: "+statusCode);
+		
 	}
 	
 	//per no crear la rowKey dins de RequestEncoding
@@ -199,7 +199,6 @@ public class IndividualExtractionBlocks {
 		encodedValue = '"'+encodedValue+'"';
 
 		String JSONrowPUT = "{\"Row\":[{\"key\":"+encodedKey+", \"Cell\": [{\"column\":"+encodedColumn+", \"$\":"+encodedValue+"}]}]}";
-
 		return JSONrowPUT;
 	}
 
@@ -210,12 +209,12 @@ public class IndividualExtractionBlocks {
 
 		Properties props = new Properties();
 		props.load(in);
-		String prevcompleteRowKey = props.getProperty("completeRowKeyBlocks");
+		String prevcompleteRowKey = props.getProperty("completeRowKey");
 		in.close();
 		FileOutputStream out = new FileOutputStream(ctrlPath);
 
 		//props.setProperty("prevExtraction", prev);
-		props.setProperty("completeRowKeyBlocks", crk);
+		props.setProperty("completeRowKey", crk);
 		System.out.println("this is the row key: "+ completeRowKey);
 		props.store(out, null);
 		out.close();
@@ -239,6 +238,10 @@ public class IndividualExtractionBlocks {
 		System.out.println("this WIMEDS DB extraction has been done at: "+ WIMEDSextractionTimeGV);
 		props.store(out, null);
 		out.close();
+		/////////
+		
+		//update completeRowKey for further extractions
+		completeRowKeyUpdate(ctrlPath, completeRowKey);
 	}
 
 
