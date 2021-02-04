@@ -30,8 +30,8 @@ public class IndividualExtractionBlocks {
 		
 	int REQUEST_maxSIZE_BYTES = 10000000; //10 MB
 	String tableName, family, rowKeyBase, metadataVersion, completeRowKey, jsessionid, bonitaToken,
-	WIMEDSextractionTimeGV, urlAPI;
-	String tablesNamesCSV;
+	WIMEDSextractionTimeGV, urlAPI, tablesNamesCSV;
+	
 	public IndividualExtractionBlocks(){}
 	
 	//initial func

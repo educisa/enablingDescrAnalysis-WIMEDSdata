@@ -135,12 +135,6 @@ public class toTransformedZone {
 
 		Path path = Paths.get("outputrequests.txt");
 		content = response.body().string();
-		try {
-			Files.writeString(path, content, StandardCharsets.UTF_8);
-		} catch (IOException ex) {
-			System.out.println("exception");
-		}
-		System.out.println(completeRowKey);
 	
 		response.body().close();
 		//update extraction times after doing the extraction, already done when extracting AdminUnits

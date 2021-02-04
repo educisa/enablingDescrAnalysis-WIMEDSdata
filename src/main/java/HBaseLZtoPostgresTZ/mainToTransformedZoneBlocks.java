@@ -1,6 +1,7 @@
 package HBaseLZtoPostgresTZ;
 
 import java.io.IOException;
+import java.text.ParseException;
 
 import org.json.JSONArray;
 
@@ -10,7 +11,7 @@ public class mainToTransformedZoneBlocks {
 	//de moment només agafo de prova les dades de AdministrationUnits
 	//les carrego sobre una bd postgres de testing named dbBlocks
 
-	public static void main(String[] args) throws IOException {
+	public static void main(String[] args) throws IOException, InterruptedException, ParseException {
 		
 		toTransformedZoneBlocks ttz = new toTransformedZoneBlocks();
 
@@ -33,25 +34,8 @@ public class mainToTransformedZoneBlocks {
 		//content es el sumatori de tots els partialArrays recollits dels blocs
 		
 		
-		
-		String colQuali = "AdministrationUnit";//get them from CSV in control.properties
-		JSONArray jsonA = ttz.getDataFromHBase(ctrlPath, colQuali);
-		System.out.println("el tamany total de les dades de AdministrationUnit: "+ jsonA.length());
-		
-		
-		
-		/*
-		//priova fent més crides que blockNum
-		//un dels statusCode i msg de Response hauria de sortir que no ha trobat res, en principi no es un 200 OK
-		for(int i = 0; i < 5; ++i) {
-			
-			String content = ttz.getDataBlocks(ctrlPath, "AdministrationUnit", i);
-			//calculem la size de cada un dels strings aixi comparo bé si s'ha fet tot correctament
-			//amb les sizes agafades quan faig el store a HBase
-			JSONArray jsonA = new JSONArray(content);
-			System.out.println("el tamany del data block "+i+" de AdministrationUnit es: "+ jsonA.length());
-			
-		}*/
+		//see TZtables from control.properties
+		ttz.exportDataToTransformedZone();
 		
 	
 		//ttz.LoadInDB(reqSQLQuery, tz_DBurl, tz_DBusr, tz_DBpsw);
