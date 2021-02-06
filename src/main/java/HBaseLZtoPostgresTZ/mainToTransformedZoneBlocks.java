@@ -33,12 +33,8 @@ public class mainToTransformedZoneBlocks {
 		//content String will contain the complete JSONArray from a specific table
 		//content es el sumatori de tots els partialArrays recollits dels blocs
 		
-		
 		//see TZtables from control.properties
 		ttz.exportDataToTransformedZone();
-		
-	
-		//ttz.LoadInDB(reqSQLQuery, tz_DBurl, tz_DBusr, tz_DBpsw);
 	}
 
 	

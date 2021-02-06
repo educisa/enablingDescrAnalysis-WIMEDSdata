@@ -27,7 +27,7 @@ public class ParallelWorker extends Thread{
 	public void run() {
 		partialQuery = "";
 
-		if(this.whichData == "AdministrationUnit") {
+		if(this.whichData.equals("AdministrationUnit")) {
 
 			for(int i=low; i<high; ++i) {
 				if(i == content.length()) {System.out.println("reached the end");}
@@ -92,7 +92,7 @@ public class ParallelWorker extends Thread{
 			}
 		}
 		
-		if(this.whichData == "Request") {
+		if(this.whichData.equals("Request")) {
 			for(int i = low;i<high; ++i) {
 				int id, diseaseID, medicalSupplyID, requestStatus, weightInKg, age;
 				String countryID, healthFacilityID, requestDateString, healthFacility, phase;
@@ -111,7 +111,7 @@ public class ParallelWorker extends Thread{
 				age = requestJSONObj.getInt("age");
 				phase = requestJSONObj.getString("phase");
 		
-				partialQuery += "INSERT INTO requests VALUES ("
+				partialQuery += "INSERT INTO request VALUES ("
 						+ id + ",'"
 						+ countryID + "','"
 						+ healthFacility + "',"

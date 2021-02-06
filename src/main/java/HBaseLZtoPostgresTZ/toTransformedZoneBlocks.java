@@ -18,6 +18,7 @@ import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
+import java.util.Vector;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -30,49 +31,51 @@ public class toTransformedZoneBlocks {
 	
 	public toTransformedZoneBlocks() {}
 	private String ctrlPath;
-	private String tz_DBurl, tz_DBusr, tz_DBpwd, HBaseTableURL, completeRowKey, colFam, tablesNamesCSV;
+	private boolean useMultiThreading;
+	private String tz_DBurl, tz_DBusr, tz_DBpwd, HBaseTableURL, completeRowKey, colFam, tablesNamesCSV, tablesMultiThread, threadControl;
 	long tz_thisExtractionTS;
 	
 	
 	//initial func
 	public void exportDataToTransformedZone() throws IOException, InterruptedException, ParseException {
-		
+		//if useMultiThreading = false then tablesMultiThread should be overwritten to "";
+		if(!useMultiThreading)tablesMultiThread ="";//any multi Threading is used
 		String[] tables = tablesNamesCSV.split(",");
 		for(int i = 0; i< tables.length; ++i) {
-			System.out.println("extracting "+tables[i]+" data");
-			JSONArray jsonA = getDataFromHBase(tables[i]);
-			String data = jsonA.toString();
 			String SQLQuery = "";
-			System.out.println("el tamany total de les dades de "+tables[i]+": "+ jsonA.length());
-			//ara aqui ja tinc tot el JSONArray de una taula en concret
-			//call function in order to generate SQLQueries
-			/*depenen de quina taula es tracti faré multithreading o no
+			if(tables[i].equals("AdministrationUnit")) {
+				fullextractAdminUnitmultiThreading orgUnitsExtr = new fullextractAdminUnitmultiThreading();
+				orgUnitsExtr.setProperties(ctrlPath);
+				if(tablesMultiThread.contains(tables[i])) SQLQuery= orgUnitsExtr.getSQLQueryAdminUnit();//implemented a part since it is not directly coming from WIMEDS-Table-Data
+				else SQLQuery = orgUnitsExtr.getSQLQueryAdminUnitnoMT();
+			}
+			else { //are tables from HBase WIMEDS-Data-Table
+				System.out.println("extracting "+tables[i]+" data");
+				JSONArray jsonA = getDataFromHBase(tables[i]);
+				String data = jsonA.toString();
+				System.out.println("el tamany total de les dades de "+tables[i]+": "+ jsonA.length());
+				System.out.println(tablesMultiThread);
+				//ara aqui ja tinc tot el JSONArray de una taula en concret
+				//call function in order to generate SQLQueries
+				/*depenen de quina taula es tracti faré multithreading o no
 			per generar les queries utilitzant multithreading només ho tinc fet per AdministrationUnit i Request
 			per les altres de moment NO s'utilitza multithreading i es generaran les SQL queries en una funcio d'aquest fitxer
 			TINC en tablesMultiThread a control.properties les taules que vull utilitzar java multithreading
-			HA D'ESTAR IMPLEMENTAT...(ara només hi tinc=AdministrationUnit,Request
-			*/
-			//haig de cridar a un generador de queries o a un altre
-			if(tables[i].equals("Request")) {
-				System.out.println("generant RequestQuery");
-				SQLQuery=getRequestQuery(data);
+			HA D'ESTAR IMPLEMENTAT...(ara només hi tinc=AdministrationUnit,Request)
+				 */
+				//haig de cridar a un generador de queries o a un altre
+				//look at useMultiThreading, if true means we have to look at which tables do we want to apply it
+				if(tables[i].equals("Request")) {
+					if(tablesMultiThread.contains(tables[i]))SQLQuery=getRequestQueryMT(data, tables[i]);
+					else SQLQuery = getRequestQuery(data);
+				}
+				else if(tables[i].equals("Manufacturer"))SQLQuery=getManufacturerQuery(data);
+				else if(tables[i].equals("Disease"))SQLQuery=getDiseaseQuery(data);
+				else if(tables[i].equals("MedicalSupply"))SQLQuery=getMedicalSupplyQuery(data);
+				else if(tables[i].equals("RequestStatus"))SQLQuery=getRequestStatusQuery(data);
+				else if(tables[i].equals("ShipmentR"))SQLQuery=getShipmentRQuery(data);
+				//else if(...) add the same for the other needed tables
 			}
-			else if(tables[i].equals("Manufacturer")) {
-				System.out.println("generant ManufacturerQuery");
-				SQLQuery=getManufacturerQuery(data);
-			}
-			else if(tables[i].equals("Disease")) {
-				System.out.println("generant DiseaseQuery");
-				SQLQuery=getDiseaseQuery(data);
-			}
-			else if(tables[i].equals("AdministrationUnit")) {
-				fullextractAdminUnitmultiThreading orgUnitsExtr = new fullextractAdminUnitmultiThreading();
-				orgUnitsExtr.setProperties(ctrlPath);
-				SQLQuery= orgUnitsExtr.getSQLQueryAdminUnit();//implemented a part since it is not directly coming from WIMEDS-Table-Data
-			}
-			
-			//if(...)
-			
 			//call function LoadInDB
 			LoadInDB(SQLQuery, tz_DBurl, tz_DBusr, tz_DBpwd);
 		}
@@ -140,16 +143,60 @@ public class toTransformedZoneBlocks {
 	
 	
 	//using multithreading to generate SQLQuery
-	public String getRequestQuery(String requestData) throws InterruptedException, IOException, ParseException {
-		String SQLQuery = "TRUNCATE TABLE requests;\n";
-		JSONArray content = new JSONArray(requestData);
-		int THREADS =  Runtime.getRuntime().availableProcessors();
-		System.out.println("using "+ THREADS+" threads, generating queries");
+	public String getRequestQueryMT(String data, String whichData) throws InterruptedException, IOException, ParseException {
+		String SQLQuery = "TRUNCATE TABLE "+whichData+";\n"; //I should not use TRUNCATE if i want rows with same id for historical data in the analysis
+		JSONArray content = new JSONArray(data);
+		int THREADS;
+		if(threadControl.equals("availableProcessors")) THREADS =  Runtime.getRuntime().availableProcessors();
+		else THREADS = Integer.parseInt(threadControl);
+		System.out.println("using "+THREADS+" threads, generating queries");
 		//call ParallelPartialQueryGenerator
 		ParallelPartialQueryGenerator partialQueryGen = new ParallelPartialQueryGenerator(THREADS);
 		//put workers to work and get the result query 
-		SQLQuery += partialQueryGen.partialQueriesSum(content, "Request");
+		SQLQuery += partialQueryGen.partialQueriesSum(content, whichData);
 		//System.out.println(SQLQuery);
+		return SQLQuery;
+	}
+
+	//not using multiThreading
+	public String getRequestQuery(String requestData) {
+		System.out.println("...generating SQLQuery from HBase data...");
+		System.out.println("WITHOUT making use of multithreading");
+		String SQLQuery = "TRUNCATE TABLE requests;\n";
+		//see if we have more or one Request in the response, if there is one, create an array an insert it there
+		JSONArray jsonArrayReq = new JSONArray();
+		jsonArrayReq = new JSONArray(requestData);
+		
+		for(int i = 0;i<jsonArrayReq.length(); ++i) {
+			int id, diseaseID, medicalSupplyID, requestStatus, weightInKg, age;
+			String countryID, healthFacilityID, requestDateString, healthFacility, phase;
+			
+			JSONObject requestJSONObj = jsonArrayReq.getJSONObject(i);
+			id = requestJSONObj.getInt("persistenceId");
+			countryID = requestJSONObj.getJSONObject("countryAdminUnit").getString("id");
+			diseaseID = requestJSONObj.getJSONObject("disease").getInt("persistenceId");
+			medicalSupplyID = requestJSONObj.getJSONObject("medicalSupply").getInt("persistenceId");
+			requestStatus = requestJSONObj.getJSONObject("requestStatus").getInt("persistenceId");
+			//healthFacilityID = requestJSONObj.getString("healthFacilityPid");
+			requestDateString = requestJSONObj.getString("requestDate");
+			requestDateString = requestDateString.substring(0,10);
+			healthFacility = requestJSONObj.getString("currentHealthFacilityName");
+			weightInKg = requestJSONObj.getInt("weightInKg");
+			age = requestJSONObj.getInt("age");
+			phase = requestJSONObj.getString("phase");
+	
+			SQLQuery += "INSERT INTO requests VALUES ("
+					+ id + ",'"
+					+ countryID + "','"
+					+ healthFacility + "',"
+					+ diseaseID + ","
+					+ medicalSupplyID + ","
+					+ requestStatus + ",'"
+					+ requestDateString + "',"
+					+ age + ","
+					+ weightInKg + ",'"
+					+ phase +"');\n";
+		}
 		return SQLQuery;
 	}
 	
@@ -212,6 +259,113 @@ public class toTransformedZoneBlocks {
 		return SQLQuery;
 	}
 	
+	public String getMedicalSupplyQuery(String medicalSupplyData) {
+		System.out.println("...generating SQLQuery from HBase data...");
+		String SQLQuery = "TRUNCATE TABLE MedicalSupply;\n";
+		
+		JSONArray jsonArrayMedicalSupply = new JSONArray(medicalSupplyData);
+		
+		for(int i = 0;i<jsonArrayMedicalSupply.length(); ++i) {
+			int id;
+			List<Integer> manufacturersIDs = new ArrayList<Integer>();
+			String name, completeName;
+			
+			
+			JSONObject MedicalSupplyJSONObj = jsonArrayMedicalSupply.getJSONObject(i);
+			id = MedicalSupplyJSONObj.getInt("persistenceId");
+			name = MedicalSupplyJSONObj.getString("name");
+			completeName = MedicalSupplyJSONObj.getString("completeName");
+	
+			//el manufacturer => null,1,*
+			Object aObj = MedicalSupplyJSONObj.get("manufacturers");
+			if (aObj instanceof JSONArray) {
+				JSONArray manufacturersJSONArray = new JSONArray();
+				manufacturersJSONArray = MedicalSupplyJSONObj.getJSONArray("manufacturers");
+				for(int j = 0; j < manufacturersJSONArray.length(); ++j) {
+					JSONObject medicalSuppliesJSONObj = manufacturersJSONArray.getJSONObject(j);
+					manufacturersIDs.add(medicalSuppliesJSONObj.getInt("persistenceId"));
+				}
+			}
+			
+			if(manufacturersIDs.isEmpty()) {
+				Integer manufacturerEmpty = null;
+				SQLQuery += "INSERT INTO MedicalSupply VALUES ("
+						+ id + ",'"
+						+ name + "','"
+						+ completeName + "',"
+						+ manufacturerEmpty + ");\n";
+			}
+			else {
+				SQLQuery += "INSERT INTO MedicalSupply VALUES ("
+						+ id + ",'"
+						+ name + "','"
+						+ completeName + "',ARRAY"
+						+ manufacturersIDs + ");\n";
+			}
+		}
+		return SQLQuery;
+	}
+	
+	public String getRequestStatusQuery(String RequestStatusData) {
+		System.out.println("...generating SQLQuery from HBase data...");
+		String SQLQuery = "TRUNCATE TABLE RequestStatus;\n";
+		
+		JSONArray jsonArrayDisease = new JSONArray(RequestStatusData);
+		for(int i = 0;i<jsonArrayDisease.length(); ++i) {
+			int id;
+			String name;
+			
+			JSONObject DiseaseJSONObj = jsonArrayDisease.getJSONObject(i);
+			id = DiseaseJSONObj.getInt("persistenceId");
+			name = DiseaseJSONObj.getString("name");
+
+			SQLQuery += "INSERT INTO RequestStatus VALUES ("
+					+ id + ",'"
+					+ name + "');\n";
+		}
+		return SQLQuery;
+	}
+	
+	public String getShipmentRQuery(String shipmentRdata) {
+		System.out.println("...generating SQLQuery from HBase data...");
+		String SQLQuery = "TRUNCATE TABLE shipmentR;\n";
+		
+		JSONArray jsonArrayship = new JSONArray(shipmentRdata);
+		
+		for(int i = 0;i<jsonArrayship.length(); ++i) {
+			int id, quantity, requestID;
+			Integer quantityReceived = null;//int can not be null
+			String medicalSupplyName, shipmentStatus, shipmentDateCreationString;
+			
+			
+			JSONObject shipmentJSONObj = jsonArrayship.getJSONObject(i);
+			id = shipmentJSONObj.getInt("persistenceId");
+			quantity = shipmentJSONObj.getInt("quantity");
+	
+			Object aObj = shipmentJSONObj.get("quantityReceived");
+			if (aObj instanceof Integer) {
+				quantityReceived = shipmentJSONObj.getInt("quantityReceived");
+			}
+			medicalSupplyName = shipmentJSONObj.getJSONObject("medicalSupply").getString("name");
+			requestID = shipmentJSONObj.getJSONObject("request").getInt("persistenceId");
+			shipmentDateCreationString = shipmentJSONObj.getString("dateOfCreation");
+			shipmentDateCreationString = shipmentDateCreationString.substring(0,10);
+			shipmentStatus = shipmentJSONObj.getString("shipmentStatus");
+	
+			SQLQuery += "INSERT INTO shipmentR VALUES ("
+					+ id + ","
+					+ quantity + ","
+					+ quantityReceived + ",'"
+					+ medicalSupplyName + "',"
+					+ requestID + ",'"
+					+ shipmentStatus + "','"
+					+ shipmentDateCreationString +"');\n";
+		}
+		
+		
+		return SQLQuery;
+	}
+	
 	
 	
 	public void LoadInDB(String SQLQuery, String tz_DBurl, String tz_DBLogin, String tz_DBPassword) {
@@ -254,12 +408,6 @@ public class toTransformedZoneBlocks {
 	}
 	
 	
-	
-	
-	
-	
-	
-	
 	public void setProperties(String ctrlPath) throws IOException{
 		
 		//////////
@@ -274,6 +422,9 @@ public class toTransformedZoneBlocks {
 		this.setthiscompleteRowKey(props.getProperty("completeRowKey"));
 		this.setColFam(props.getProperty("family1"));
 		this.setTZtablesNames(props.getProperty("TZtables"));
+		this.setUseMultiThreading(props.getProperty("useMultiThreading"));
+		this.setTablesNamesMT(props.getProperty("tablesMultiThread"));
+		this.setThreadControl(props.getProperty("nThreads"));
 		this.ctrlPath=ctrlPath;
         in.close();
 		/////////
@@ -299,6 +450,20 @@ public class toTransformedZoneBlocks {
 	
 	public String getTZtablesNames() {return this.tablesNamesCSV;}
 	public void setTZtablesNames(String tablesNamesCSV) {this.tablesNamesCSV = tablesNamesCSV;}
+	
+	public String getTablesNamesMT() {return this.tablesMultiThread;}
+	public void setTablesNamesMT(String tablesMultiThread) {this.tablesMultiThread = tablesMultiThread;}
+	
+	public String getThreadControl() {return this.threadControl;}
+	public void setThreadControl(String s) {this.threadControl = s;}
+	
+	public boolean getUseMultiThreading() {return this.useMultiThreading;}
+	public void setUseMultiThreading(String s) {
+		if(s.equals("true"))this.useMultiThreading = true;
+		else this.useMultiThreading=false;
+	}
+	
+	
 	
 	
 	

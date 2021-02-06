@@ -4,6 +4,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -13,6 +14,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.Base64;
 import java.util.Date;
 import java.util.Properties;
 
@@ -33,7 +35,7 @@ public fullextractAdminUnitmultiThreading() {}
 	private String HBaseURL, scannerBatch;
 	long thisExtractionTS;
 	boolean b = true;
-	String thisExtractionGV, prevExtractionGV, thisFullExtractionGV; //are long (timestamps) stored string
+	String thisExtractionGV, prevExtractionGV, thisFullExtractionGV, threadControl; //are long (timestamps) stored string
 	
 	Instant start = Instant.now();
 	
@@ -129,14 +131,84 @@ public fullextractAdminUnitmultiThreading() {}
 		//getting data from Administration Units from DEV-Org-Units Table landing zone HBase
 		String scanner_id = getScannerId();
 		JSONArray content = getDataFromHBase(scanner_id);
-		int THREADS =  Runtime.getRuntime().availableProcessors();
-		System.out.println("using "+ THREADS+" threads, generating queries");
+		int THREADS;
+		if(threadControl.equals("availableProcessors")) THREADS =  Runtime.getRuntime().availableProcessors();
+		else THREADS = Integer.parseInt(threadControl);
+		System.out.println("using "+THREADS+" threads, generating queries");
 		//call ParallelPartialQueryGenerator
 		ParallelPartialQueryGenerator partialQueryGen = new ParallelPartialQueryGenerator(THREADS);
 		String OrgUnitSQLQuery = "TRUNCATE TABLE AdministrationUnit;\n";
 		//put workers to work and get the result query 
 		OrgUnitSQLQuery += partialQueryGen.partialQueriesSum(content, "AdministrationUnit");
 		return OrgUnitSQLQuery;
+	}
+	
+	//generating SQLQuery not using using multithreading
+	public String getSQLQueryAdminUnitnoMT() throws IOException {
+		//getting data from Administration Units from DEV-Org-Units Table landing zone HBase
+		String scanner_id = getScannerId();
+		JSONArray content = getDataFromHBase(scanner_id);
+		String SQLQuery="";
+		System.out.println("length del content sense utilitzar MULtithtreading: " + content.length());
+		for(int i =0; i < content.length(); ++i) {
+			//generate query for each adminunit between the range low,high
+			JSONObject AdminUnitObj = content.getJSONObject(i);
+			JSONArray encodedJSONArray = AdminUnitObj.getJSONArray("Cell");
+			JSONObject encodedJSONObject = encodedJSONArray.getJSONObject(0);
+			String encodedValue = encodedJSONObject.getString("$");
+			//decode the encodedValue
+			byte[] dataBytes = Base64.getDecoder().decode(encodedValue);
+			String decodedValue="";
+			try {
+				decodedValue = new String(dataBytes, StandardCharsets.UTF_8.name());
+			} catch (UnsupportedEncodingException e) {
+				e.printStackTrace();
+			}
+			//transform it to JSON to get the fields we are interested in
+			JSONObject resultJSONValue = new JSONObject(decodedValue);
+
+
+			String parentid = "";
+			if(resultJSONValue.has("parent")) {
+				JSONObject JSONObjparent = resultJSONValue.getJSONObject("parent");
+				parentid = JSONObjparent.getString("id");
+			}
+
+			String url = null;//just some organisationUnits have (e.g., http://www.hospitalclinic.org)
+			if(resultJSONValue.has("url")) {
+				url = resultJSONValue.getString("url");
+				url = url.replaceAll("'","''");
+			}
+
+			String address = null;//just some organisationUnits have (e.g., calle Villarroel, 170, 08036 Barcelona, Spain)
+			if(resultJSONValue.has("address")) {
+				address = resultJSONValue.getString("address");
+				address = address.replaceAll("'","''");
+			}
+
+			String id, name, shortname, datelastupdated;
+			Boolean leaf;
+			Integer levelnumber;
+			id = resultJSONValue.getString("id");
+			name = resultJSONValue.getString("name");
+			shortname = resultJSONValue.getString("shortName");
+			datelastupdated = resultJSONValue.getString("lastUpdated");
+			leaf = resultJSONValue.getBoolean("leaf");
+			levelnumber = resultJSONValue.getInt("level");
+
+			SQLQuery += "INSERT INTO AdministrationUnit VALUES ('"
+					+ id + "','"
+					+ parentid + "','"
+					+ name.replaceAll("'","''") + "','"
+					+ shortname.toString().replaceAll("'","''") + "','"
+					+ datelastupdated.substring(0,10) + "',"
+					+ leaf + ","
+					+ levelnumber + ",'"
+					+ address + "','"
+					+ url + "');\n";
+		}
+		
+		return SQLQuery;
 	}
 	
 	//call this function when extracting data=>update extraction times at props
@@ -206,7 +278,8 @@ public fullextractAdminUnitmultiThreading() {}
         Properties props = new Properties();
         props.load(in);
 		this.setHBaseURL(props.getProperty("url"));
-		this.setScannerBatch(props.getProperty("batch"));		
+		this.setScannerBatch(props.getProperty("batch"));	
+		this.setThreadControl(props.getProperty("nThreads"));
 		//
 		String fe = props.getProperty("tz_thisExtractionOrgUnits");
 		long longFE = Long.parseLong(fe);
@@ -226,4 +299,7 @@ public fullextractAdminUnitmultiThreading() {}
     
     public void setScannerBatch(String str)     {this.scannerBatch = str;}
     public String getScannerBatch()             {return scannerBatch;}
+    
+	public String getThreadControl() {return this.threadControl;}
+	public void setThreadControl(String s) {this.threadControl = s;}
 }
