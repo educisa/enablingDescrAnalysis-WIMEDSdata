@@ -47,20 +47,20 @@ public class PostgresSqlTransformedZone {
 		
 		String SQLQueryMV0 ="CREATE MATERIALIZED VIEW IF NOT EXISTS requests_summary1 AS"
 				+ " SELECT distinct r.id as requestID, r.requestdate as requestDate, r.healthfacility as healthFacility, au.shortname as Country, au1.shortname as continent, rs.name as requestStatus, ms.name as medicalSupply, d.name as disease"
-				+ " FROM requests r, administrationunit au, requeststatus rs, medicalsupply ms, disease d, administrationunit au1"
+				+ " FROM request r, administrationunit au, requeststatus rs, medicalsupply ms, disease d, administrationunit au1"
 				+ " WHERE r.countryid=au.id and r.requeststatusid=rs.id and r.medicalsupplyid=ms.id and r.diseaseid=d.id and au.parentid=au1.id"
 				+ " order by r.id, r.requestdate, au.shortname, rs.name, ms.name, d.name;";
 		
 		String SQLQueryMV1 = "CREATE MATERIALIZED VIEW IF NOT EXISTS requests_summary2 AS"
 				+ " SELECT distinct r.id as requestID, r.requestdate as requestDate, au.shortname as Country, au1.shortname as continent, d.name as disease, r.patientage as patient_age,"
 				+ "r.patientweightinkg as patient_weigthInKg, r.diseasephase as phase"
-				+ " FROM requests r, administrationunit au, requeststatus rs, medicalsupply ms, disease d, administrationunit au1"
+				+ " FROM request r, administrationunit au, requeststatus rs, medicalsupply ms, disease d, administrationunit au1"
 				+ " WHERE r.countryid=au.id and r.requeststatusid=rs.id and r.medicalsupplyid=ms.id and r.diseaseid=d.id and au.parentid=au1.id"
 				+ " order by r.id, r.requestdate, au.shortname, d.name, r.patientage, r.patientweightinkg, r.diseasephase;";
 		
 		String SQLQueryMV2 = "CREATE MATERIALIZED VIEW IF NOT EXISTS manufacturer_requests_summary AS"
 				+ " SELECT distinct r.id as requestID, r.requestdate as requestDate, au.shortname as shortname, rs.name as requestStatus, ms.name as medicalSupply, mf.name as manufacturer"
-				+ " FROM requests r, administrationunit au, requeststatus rs, medicalsupply ms, manufacturer mf, medicalsupply_manufacturer msm"
+				+ " FROM request r, administrationunit au, requeststatus rs, medicalsupply ms, manufacturer mf, medicalsupply_manufacturer msm"
 				+ " WHERE r.countryid=au.id and r.requeststatusid=rs.id and r.medicalsupplyid=ms.id and ms.id=msm.medicalsupplyid and msm.manufacturerid=mf.id"
 				+ " order by r.id, r.requestdate, au.shortname, rs.name, ms.name, mf.name;";
 		
@@ -114,7 +114,7 @@ public class PostgresSqlTransformedZone {
 	
 	
 	public String createRequestsTable() {
-		String SQLQuery = "CREATE TABLE IF NOT EXISTS Requests("
+		String SQLQuery = "CREATE TABLE IF NOT EXISTS Request("
 				+ "id int NOT NULL PRIMARY KEY,"
 				+ "countryid character varying(11),"
 				+ "healthfacility character varying(150),"
@@ -124,7 +124,8 @@ public class PostgresSqlTransformedZone {
 				+ "requestdate date,"
 				+ "patientAge integer,"
 				+ "patientWeightInKg integer,"
-				+ "diseasePhase character varying(22)"
+				+ "diseasePhase character varying(22),"
+				+ "transmissionWay character varying(22)"
 				+ ");";
 		
 		return SQLQuery;
@@ -134,16 +135,22 @@ public class PostgresSqlTransformedZone {
 		
 		String SQLQuery = "CREATE TABLE IF NOT EXISTS shipmentR("
 				+ "id int NOT NULL PRIMARY KEY,"
-				+ "quantity integer,"
-				+ "quantityreceived integer,"
-				+ "medicalsupplyname character varying(150),"
-				+ "requestid integer,"
+				+ "shipmentcreationdate date,"
 				+ "shipmentstatus character varying(150),"
-				+ "shipmentcreationdate date"
+				+ "EDD date,"
+				+ "shippedDate date,"
+				+ "receptionDate date,"
+				+ "requestid integer,"
+				+ "medicalsupplyname character varying(150),"
+				+ "healthFacilityName character varying(200),"
+				+ "courierName character varying(10),"
+				+ "quantity integer,"
+				+ "quantityreceived integer"
 				+ ");";
 		
 		return SQLQuery;
 	}
+
 	public String createDiseaseTable() {
 		
 		String SQLQuery = "CREATE TABLE IF NOT EXISTS Disease"
@@ -156,6 +163,7 @@ public class PostgresSqlTransformedZone {
 		
 		return SQLQuery;
 	}
+	
 	public String createRequestStatusTable() {
 		
 		String SQLQuery = "CREATE TABLE IF NOT EXISTS RequestStatus"

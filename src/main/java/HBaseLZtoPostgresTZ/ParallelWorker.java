@@ -95,7 +95,7 @@ public class ParallelWorker extends Thread{
 		if(this.whichData.equals("Request")) {
 			for(int i = low;i<high; ++i) {
 				int id, diseaseID, medicalSupplyID, requestStatus, weightInKg, age;
-				String countryID, healthFacilityID, requestDateString, healthFacility, phase;
+				String countryID, healthFacilityID, requestDateString, healthFacility, phase, transmissionWay;
 				
 				JSONObject requestJSONObj = content.getJSONObject(i);
 				id = requestJSONObj.getInt("persistenceId");
@@ -110,6 +110,7 @@ public class ParallelWorker extends Thread{
 				weightInKg = requestJSONObj.getInt("weightInKg");
 				age = requestJSONObj.getInt("age");
 				phase = requestJSONObj.getString("phase");
+				transmissionWay = requestJSONObj.getString("transmissionWay");
 		
 				partialQuery += "INSERT INTO request VALUES ("
 						+ id + ",'"
@@ -121,7 +122,8 @@ public class ParallelWorker extends Thread{
 						+ requestDateString + "',"
 						+ age + ","
 						+ weightInKg + ",'"
-						+ phase +"');\n";
+						+ phase +"','"
+						+ transmissionWay +"');\n";
 			}
 			
 			

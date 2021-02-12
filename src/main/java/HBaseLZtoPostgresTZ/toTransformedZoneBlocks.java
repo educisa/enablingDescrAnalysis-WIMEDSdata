@@ -169,7 +169,7 @@ public class toTransformedZoneBlocks {
 		
 		for(int i = 0;i<jsonArrayReq.length(); ++i) {
 			int id, diseaseID, medicalSupplyID, requestStatus, weightInKg, age;
-			String countryID, healthFacilityID, requestDateString, healthFacility, phase;
+			String countryID, healthFacilityID, requestDateString, healthFacility, phase, transmissionWay;
 			
 			JSONObject requestJSONObj = jsonArrayReq.getJSONObject(i);
 			id = requestJSONObj.getInt("persistenceId");
@@ -184,7 +184,7 @@ public class toTransformedZoneBlocks {
 			weightInKg = requestJSONObj.getInt("weightInKg");
 			age = requestJSONObj.getInt("age");
 			phase = requestJSONObj.getString("phase");
-	
+			transmissionWay = requestJSONObj.getString("transmissionWay");
 			SQLQuery += "INSERT INTO requests VALUES ("
 					+ id + ",'"
 					+ countryID + "','"
@@ -195,7 +195,8 @@ public class toTransformedZoneBlocks {
 					+ requestDateString + "',"
 					+ age + ","
 					+ weightInKg + ",'"
-					+ phase +"');\n";
+					+ phase +"','"
+					+ transmissionWay +"');\n";
 		}
 		return SQLQuery;
 	}
@@ -333,33 +334,63 @@ public class toTransformedZoneBlocks {
 		JSONArray jsonArrayship = new JSONArray(shipmentRdata);
 		
 		for(int i = 0;i<jsonArrayship.length(); ++i) {
+			boolean received = false;
 			int id, quantity, requestID;
 			Integer quantityReceived = null;//int can not be null
-			String medicalSupplyName, shipmentStatus, shipmentDateCreationString;
-			
+			String receptionDateString = null;
+			String medicalSupplyName, shipmentStatus, shipmentDateCreationString, EDDstring, healthFacilityName, shippedDateString;
 			
 			JSONObject shipmentJSONObj = jsonArrayship.getJSONObject(i);
 			id = shipmentJSONObj.getInt("persistenceId");
 			quantity = shipmentJSONObj.getInt("quantity");
-	
+			healthFacilityName = shipmentJSONObj.getString("healthFacilityName");
 			Object aObj = shipmentJSONObj.get("quantityReceived");
 			if (aObj instanceof Integer) {
 				quantityReceived = shipmentJSONObj.getInt("quantityReceived");
+			}
+			aObj = shipmentJSONObj.get("receptionDate");
+			if (aObj instanceof String) {
+				receptionDateString = shipmentJSONObj.getString("receptionDate");
+				received = true;
 			}
 			medicalSupplyName = shipmentJSONObj.getJSONObject("medicalSupply").getString("name");
 			requestID = shipmentJSONObj.getJSONObject("request").getInt("persistenceId");
 			shipmentDateCreationString = shipmentJSONObj.getString("dateOfCreation");
 			shipmentDateCreationString = shipmentDateCreationString.substring(0,10);
+			EDDstring = shipmentJSONObj.getString("edd");
+			shippedDateString = shipmentJSONObj.getString("shippedDate");
 			shipmentStatus = shipmentJSONObj.getString("shipmentStatus");
-	
+
 			SQLQuery += "INSERT INTO shipmentR VALUES ("
-					+ id + ","
-					+ quantity + ","
-					+ quantityReceived + ",'"
-					+ medicalSupplyName + "',"
-					+ requestID + ",'"
+					+ id + ",'"
+					+ shipmentDateCreationString + "','"
 					+ shipmentStatus + "','"
-					+ shipmentDateCreationString +"');\n";
+					+ EDDstring + "','"
+					+ shippedDateString + "',";
+			if(receptionDateString == null)SQLQuery+=null + ",";
+			else SQLQuery += "'"+receptionDateString + "',";
+			SQLQuery += requestID + ",'"
+					+ medicalSupplyName + "','"
+					+ healthFacilityName + "',"
+					+ quantity + ","
+					+ quantityReceived + ");\n";
+			
+			/*
+			else {
+				SQLQuery += "INSERT INTO shipmentR VALUES ("
+						+ id + ",'"
+						+ shipmentDateCreationString + "','"
+						+ shipmentStatus + "','"
+						+ EDDstring + "','"
+						+ shippedDateString + "',"
+						+ null + ","
+						+ requestID + ",'"
+						+ medicalSupplyName + "','"
+						+ healthFacilityName + "',"
+						+ quantity + ","
+						+ quantityReceived + ");\n";
+			}*/
+			System.out.println(SQLQuery);
 		}
 		
 		
@@ -415,11 +446,12 @@ public class toTransformedZoneBlocks {
         FileInputStream in = new FileInputStream(ctrlPath);
 
         props.load(in);
-		this.setDBurl(props.getProperty("tz_DBurl"));
-		this.setDBusr(props.getProperty("tz_DBusr"));
-		this.setDBpwd(props.getProperty("tz_DBpwd"));
+		this.setDBurl(props.getProperty("testDBurl"));
+		this.setDBusr(props.getProperty("testDBusr"));
+		this.setDBpwd(props.getProperty("testDBpwd"));
 		this.setHBaseTableURL(props.getProperty("urlWIMEDSdataTable"));
 		this.setthiscompleteRowKey(props.getProperty("completeRowKey"));
+		System.out.println("getting data from rowKey: "+ props.getProperty("completeRowKey"));
 		this.setColFam(props.getProperty("family1"));
 		this.setTZtablesNames(props.getProperty("TZtables"));
 		this.setUseMultiThreading(props.getProperty("useMultiThreading"));
