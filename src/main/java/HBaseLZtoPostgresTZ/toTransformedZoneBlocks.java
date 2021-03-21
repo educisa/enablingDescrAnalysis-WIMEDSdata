@@ -446,9 +446,9 @@ public class toTransformedZoneBlocks {
         FileInputStream in = new FileInputStream(ctrlPath);
 
         props.load(in);
-		this.setDBurl(props.getProperty("testDBurl"));
-		this.setDBusr(props.getProperty("testDBusr"));
-		this.setDBpwd(props.getProperty("testDBpwd"));
+		this.setDBurl(props.getProperty("tz_DBurl"));
+		this.setDBusr(props.getProperty("tz_DBusr"));
+		this.setDBpwd(props.getProperty("tz_DBpwd"));
 		this.setHBaseTableURL(props.getProperty("urlWIMEDSdataTable"));
 		this.setthiscompleteRowKey(props.getProperty("completeRowKey"));
 		System.out.println("getting data from rowKey: "+ props.getProperty("completeRowKey"));

@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -102,8 +103,8 @@ public organisationUnitsUpdate() {}
 				scanner_id = scanner_id.substring(scanner_id.lastIndexOf("/") + 1);
 				String msg = response.message();
 				Integer statusCode = response.code();
-				System.out.println("response status code: "+ statusCode);
-				System.out.println("response msg: "+ msg);
+				//System.out.println("response status code: "+ statusCode);
+				//System.out.println("response msg: "+ msg);
 				response.body().close();
 				
 				return scanner_id;
@@ -111,101 +112,95 @@ public organisationUnitsUpdate() {}
     
     
 	
-    public String updateData(String scanner_id) throws IOException {
-    	
+	public String updateData(String scanner_id) throws IOException {
+
 		String rootPath = Thread.currentThread().getContextClassLoader().getResource("").getPath();
 		String ctrlPath = rootPath + "control.properties";
-    	//set extraction times in global variables values, if load in DB is successful, update in control.properties
+		//set extraction times in global variables values, if load in DB is successful, update in control.properties
 		setGVExtractionTimes(ctrlPath);
 		int updatedRows = 0;
-    	Boolean finishScan = false;
-    	String SQLQueryUpdate = "";
-    	Integer calls = 0;
-    	System.out.println("...starting update scan...");
-    	while (finishScan.equals(false)) {
+		Boolean finishScan = false;
+		String SQLQueryUpdate = "";
+		Integer calls = 0;
+		System.out.println("...starting update scan...");
+		while (finishScan.equals(false)) {
 			OkHttpClient client = new OkHttpClient().newBuilder()
 					.build();
 			Request request = new Request.Builder()
 					.url(HBaseURL+"/scanner/"+scanner_id)
 					.method("GET", null)
-					.addHeader("Accept", "text/xml")
+					.addHeader("Accept", "application/json")
 					.build();
 			Response response = client.newCall(request).execute();
 			ResponseBody body = response.body();
-			String encodedBodyxml = response.body().string();
-			Headers headers = response.headers();
 			++calls;
+			String content = response.body().string();
+			Headers headers = response.headers();
+
 			String msg = response.message();
 			Integer statusCode = response.code();
- 
 
-			//FER UN IF de error=> si treu un error retornem un strin "error"
-			//si no fesim aixo podria ser que la query no s'hagi format bé, algun error mentres l'scanner recorre la taula, etc.
-			//en aquest cas s'hauria d'abortar la carrega de la query ja que el contingut d'aquesta podria ser erroni o incomplet amb el que necessitem
-			/*
-			if(statusCode != 200 || statusCode != 204) {
-				System.out.println("error de conexio");
-			}*/
 			//means scanner has finished
 			if(statusCode == 204) {
 				response.body().close();
 				finishScan=true;
 				System.out.println("...update scan finished...");
 				System.out.println(updatedRows+" rows updated");
-				System.out.println("response status code: "+ statusCode);
-				System.out.println("response msg: "+ msg);
 			}
 			//else statusCode = 200 and everything is OK
 			else {
-				JSONObject xmlJSONObj = XML.toJSONObject(encodedBodyxml);
-				JSONObject CellSetJSONObj = (JSONObject) xmlJSONObj.get("CellSet");
-				//get the row as a string
-				String stringRow = CellSetJSONObj.get("Row").toString();
-				//to know if its a JSONObject or a JSONArray
-				Object json = new JSONTokener(stringRow).nextValue();
-				if(json instanceof JSONObject) {
-					
-					JSONObject RowSetJSONobj = (JSONObject) CellSetJSONObj.get("Row");
-					
+				JSONObject JSONObjectContent = new JSONObject(content);
+
+				JSONArray JSONArrayRows = (JSONArray) JSONObjectContent.get("Row");
+
+				// concatenate arrays
+				for (int i = 0; i < JSONArrayRows.length(); i++) {
 					++updatedRows;
+					//JSONArrayContent.put(JSONArrayRows.getJSONObject(i));
+					//generate query for each adminunit between the range low,high
+					JSONObject AdminUnitObj = JSONArrayRows.getJSONObject(i);
+					JSONArray encodedJSONArray = AdminUnitObj.getJSONArray("Cell");
+					JSONObject encodedJSONObject = encodedJSONArray.getJSONObject(0);
+					String encodedValue = encodedJSONObject.getString("$");
+					//decode the encodedValue
+					byte[] dataBytes = Base64.getDecoder().decode(encodedValue);
+					String decodedValue="";
+					try {
+						decodedValue = new String(dataBytes, StandardCharsets.UTF_8.name());
+					} catch (UnsupportedEncodingException e) {
+						e.printStackTrace();
+					}
+					//transform it to JSON to get the fields we are interested in
+					JSONObject resultJSONValue = new JSONObject(decodedValue);
 
-					//getting the content
-					String content = RowSetJSONobj.getJSONObject("Cell").getString("content");
 
-					//decoding
-					Decoder decoder = Base64.getDecoder();
-					byte[] bytes = decoder.decode(content);
-					String decodedContent = new String(bytes, "UTF-8");
-					JSONObject resultContentJSON = new JSONObject(decodedContent);
-					
+					String parentid = "";
+					if(resultJSONValue.has("parent")) {
+						JSONObject JSONObjparent = resultJSONValue.getJSONObject("parent");
+						parentid = JSONObjparent.getString("id");
+					}
+
 					String url = null;//just some organisationUnits have (e.g., http://www.hospitalclinic.org)
-					if(resultContentJSON.has("url")) {
-						url = resultContentJSON.getString("url");
+					if(resultJSONValue.has("url")) {
+						url = resultJSONValue.getString("url");
 						url = url.replaceAll("'","''");
 					}
-					
-					String address = null;//just some organisationUnits have (e.g., calle Villarroel, 170, 08036 Barcelona, Spain)
-					if(resultContentJSON.has("address")) {
-						address = resultContentJSON.getString("address");
-						address = address.replaceAll("'","''");
-					}
-					
-					String parentid = "";
 
-					if(resultContentJSON.has("parent")) {
-						JSONObject JSONObjparent = resultContentJSON.getJSONObject("parent");
-						parentid = JSONObjparent.getString("id");
+					String address = null;//just some organisationUnits have (e.g., calle Villarroel, 170, 08036 Barcelona, Spain)
+					if(resultJSONValue.has("address")) {
+						address = resultJSONValue.getString("address");
+						address = address.replaceAll("'","''");
 					}
 
 					String id, name, shortname, datelastupdated;
 					Boolean leaf;
 					Integer levelnumber;
-					id = resultContentJSON.getString("id");
-					name = resultContentJSON.getString("name");
-					shortname = resultContentJSON.getString("shortName");
-					datelastupdated = resultContentJSON.getString("lastUpdated");
-					leaf = resultContentJSON.getBoolean("leaf");
-					levelnumber = resultContentJSON.getInt("level");
+					id = resultJSONValue.getString("id");
+					name = resultJSONValue.getString("name");
+					shortname = resultJSONValue.getString("shortName");
+					datelastupdated = resultJSONValue.getString("lastUpdated");
+					leaf = resultJSONValue.getBoolean("leaf");
+					levelnumber = resultJSONValue.getInt("level");
 
 
 					SQLQueryUpdate += "UPDATE administrationunit SET parentid='"
@@ -225,92 +220,14 @@ public organisationUnitsUpdate() {}
 							+"url='"
 							+url+"'"
 							+" WHERE id='"+id+"';\n";
-					
-					
 				}
-				
-				else if(json instanceof JSONArray) {
-					
-					JSONArray resultsJArray1 = new JSONArray();
-					resultsJArray1 = CellSetJSONObj.optJSONArray("Row");
-
-					Integer JSONlength = resultsJArray1.length();
-					
-					
-					
-					for(int i = 0; i < JSONlength; ++i) {
-						JSONObject rowJSONObj = (JSONObject) resultsJArray1.get(i);
-
-						++updatedRows;
-
-						//getting the content
-						String content = rowJSONObj.getJSONObject("Cell").getString("content");
-
-						//decoding
-						Decoder decoder = Base64.getDecoder();
-						byte[] bytes = decoder.decode(content);
-						String decodedContent = new String(bytes, "UTF-8");
-						JSONObject resultContentJSON = new JSONObject(decodedContent);
-						
-						String url = null;//just some organisationUnits have (e.g., http://www.hospitalclinic.org)
-						if(resultContentJSON.has("url")) {
-							url = resultContentJSON.getString("url");
-							url = url.replaceAll("'","''");
-						}
-						
-						String address = null;//just some organisationUnits have (e.g., calle Villarroel, 170, 08036 Barcelona, Spain)
-						if(resultContentJSON.has("address")) {
-							address = resultContentJSON.getString("address");
-							address = address.replaceAll("'","''");
-						}
-
-						String parentid = "";
-
-						if(resultContentJSON.has("parent")) {
-							JSONObject JSONObjparent = resultContentJSON.getJSONObject("parent");
-							parentid = JSONObjparent.getString("id");
-						}
-
-						String id, name, shortname, datelastupdated;
-						Boolean leaf;
-						Integer levelnumber;
-						id = resultContentJSON.getString("id");
-						name = resultContentJSON.getString("name");
-						shortname = resultContentJSON.getString("shortName");
-						datelastupdated = resultContentJSON.getString("lastUpdated");
-						leaf = resultContentJSON.getBoolean("leaf");
-						levelnumber = resultContentJSON.getInt("level");
-
-
-						SQLQueryUpdate += "UPDATE administrationunit SET parentid='"
-								+parentid + "',"
-								+"name='"
-								+name.replaceAll("'","''") + "',"
-								+"shortName='"
-								+shortname.toString().replaceAll("'","''") + "',"
-								+"datelastupdated='"
-								+datelastupdated.substring(0,10) + "',"
-								+"leaf="
-								+leaf + ","
-								+"levelnumber="
-								+levelnumber+","
-								+"address='"
-								+address+"',"
-								+"url='"
-								+url+"'"
-								+" WHERE id='"+id+"';\n";
-						
-					}
-					
-				}
-				
+			}
 			response.body().close();
 		}
-    	}
-		
+
 		deleteScanner(scanner_id);
 		return SQLQueryUpdate;	
-    }
+	}
 
 
 	

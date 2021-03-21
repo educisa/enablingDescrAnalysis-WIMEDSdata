@@ -123,7 +123,7 @@ public class fullextractAdminUnitmultiThreading {
 		Integer calls = 0;
 		Integer extractedRows = 0;
 		Boolean finishScan = false;
-		System.out.println("...generating SQLQuery from HBase data...");
+		System.out.println("...getting Administration Units from HBase...");
 
 		while (finishScan.equals(false)) {
 			OkHttpClient client = new OkHttpClient().newBuilder()
@@ -146,7 +146,7 @@ public class fullextractAdminUnitmultiThreading {
 				response.body().close();
 				finishScan=true;
 				System.out.println("...scanner finsihed...");
-				System.out.println("response status code: "+ statusCode);
+				//System.out.println("response status code: "+ statusCode);
 			}
 			
 			else {
@@ -205,7 +205,7 @@ public class fullextractAdminUnitmultiThreading {
 			Instant end = Instant.now();
 			LocalDateTime ldtStart = LocalDateTime.ofInstant(start, ZoneId.systemDefault());
 			LocalDateTime ldtEnd = LocalDateTime.ofInstant(end, ZoneId.systemDefault());
-			System.out.println("time spent: " + Duration.between(ldtStart, ldtEnd).toSeconds()+" seconds");
+			System.out.println("time spent: " + Duration.between(ldtStart, ldtEnd).getSeconds()+" seconds");
 			}
 		catch (SQLException e)
 		{

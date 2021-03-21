@@ -19,21 +19,18 @@ public class updateDB_orgUnits {
 		String scanner_id = orgUnitsUpdate.getTRScannerID();
 		
 		String SQLQuery = orgUnitsUpdate.updateData(scanner_id);
-		
-		if(SQLQuery=="") {
-			System.out.println("Everything up-to-date");
-			//update extraction times
-			orgUnitsUpdate.setExtractionTimes(ctrlPath);
-		}
+		System.out.println("Aquesta es la query: "+SQLQuery);
+		if(SQLQuery.equals(""))System.out.println("Everything up-to-date");
 		else {
 			String DBurl = orgUnitsUpdate.getDBurl();
 			String DBusr = orgUnitsUpdate.getDBusr();
 			String DBpsw = orgUnitsUpdate.getDBpwd();
+			//load to postgresDB
 			orgUnitsUpdate.LoadInDB(SQLQuery, DBurl, DBusr, DBpsw);
-			
-			//update extraction times
-			orgUnitsUpdate.setExtractionTimes(ctrlPath);
 		}
+		
+		//update extraction times in any case
+		orgUnitsUpdate.setExtractionTimes(ctrlPath);
 		System.out.println("··application finished··");
 	}
 

@@ -20,12 +20,12 @@ public class getAllAdminUnitMultithreading {
 		String scanner_id = orgUnitsExtr.getScannerId();
 
 		JSONArray content = orgUnitsExtr.getDataFromHBase(scanner_id, ctrlPath);
-		System.out.println("lenght of the final content array: "+ content.length());
+		System.out.println("lenght ORGUNITS: "+ content.length());
 		int THREADS =  Runtime.getRuntime().availableProcessors();
 		System.out.println("using "+ THREADS+" threads");
 
 		//call ParallelPartialQueryGenerator
-		ParallelPartialQueryGenerator partialQueryGen = new ParallelPartialQueryGenerator(THREADS);
+		ParallelPartialQueryGenerator partialQueryGen = new ParallelPartialQueryGenerator(THREADS, false);
 		
 		String SQLQuery = "TRUNCATE TABLE AdministrationUnit;\n";
 		//put workers to work and get the result query 

@@ -7,13 +7,12 @@ import java.util.Properties;
 
 public class HBase_orgUnitExtraction {
 	public static void main(String[] args) throws IOException, Exception{
-		System.out.println("··application started··");
+		System.out.println("...application started...");
 		organisationUnitsExtraction orgUnitsExtr = new organisationUnitsExtraction();
 		
 		String rootPath = Thread.currentThread().getContextClassLoader().getResource("").getPath();
 		String ctrlPath = rootPath +"control.properties";
 
-		
 		orgUnitsExtr.setProperties(ctrlPath);
 		
 		String scanner_id = orgUnitsExtr.getScannerId();
