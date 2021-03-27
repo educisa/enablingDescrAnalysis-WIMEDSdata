@@ -191,6 +191,7 @@ public class fullextractAdminUnitmultiThreading {
 		Statement st = null;	
 		System.out.println("...inserting data to DB...");
 		try {
+			
 			//Step 1 : loading driver
 			Class.forName("org.postgresql.Driver");
 			//Step 2 : Connection
@@ -237,13 +238,12 @@ public class fullextractAdminUnitmultiThreading {
         
         Properties props = new Properties();
         props.load(in);
-        String WIMEDSDBurl = props.getProperty("WIMEDSDBurl");
-        System.out.println("this is the WIMEDSDBurl: "+ WIMEDSDBurl);
 		this.setDBurl(props.getProperty("WIMEDSDBurl"));
 		this.setDBusr(props.getProperty("WIMEDSDBusr"));
 		this.setDBpwd(props.getProperty("WIMEDSDBpwd"));
 		this.setHBaseURL(props.getProperty("url"));
-		this.setScannerBatch(props.getProperty("batch"));		
+		String batch = props.getProperty("scannerbatch");		
+		this.scannerBatch = "<Scanner batch="+"\""+batch+"\""+"/>";
 		//
 		String fe = props.getProperty("thisFullExtraction");
 		long longFE = Long.parseLong(fe);

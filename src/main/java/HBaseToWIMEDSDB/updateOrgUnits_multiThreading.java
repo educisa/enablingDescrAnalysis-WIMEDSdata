@@ -35,7 +35,7 @@ public class updateOrgUnits_multiThreading {
 	
 	public updateOrgUnits_multiThreading() {}
 
-	private String DBurl, DBusr, DBpwd, HBaseURL, scannerTRbatch, bodyScanner;
+	private String DBurl, DBusr, DBpwd, HBaseURL, scannerTRbatch, bodyScanner, useMt;
 	long thisExtractionTS;
 	String thisExtractionGV, prevExtractionGV, thisUpdateGV; //are long stored as string
 	
@@ -46,29 +46,34 @@ public class updateOrgUnits_multiThreading {
 	
 	public String getTRScannerID() throws IOException {
 
-		OkHttpClient client = new OkHttpClient().newBuilder()
-				.build();
-		MediaType mediaType = MediaType.parse("text/xml");
-		RequestBody body = RequestBody.create(bodyScanner,mediaType);
-		Request request = new Request.Builder()
-				.url(HBaseURL+"/scanner")
-				.method("PUT", body)
-				.addHeader("Accept", "text/xml")
-				.addHeader("Content-Type", "text/xml")
-				.build();
-		Response response = client.newCall(request).execute();
+		try {
+			OkHttpClient client = new OkHttpClient().newBuilder()
+					.build();
+			MediaType mediaType = MediaType.parse("text/xml");
+			RequestBody body = RequestBody.create(bodyScanner,mediaType);
+			Request request = new Request.Builder()
+					.url(HBaseURL+"/scanner")
+					.method("PUT", body)
+					.addHeader("Accept", "text/xml")
+					.addHeader("Content-Type", "text/xml")
+					.build();
+			Response response = client.newCall(request).execute();
 
-		Headers headers = response.headers();
-		String scanner_id = headers.value(0);
-		System.out.println("scanner_id: " + scanner_id.substring(scanner_id.lastIndexOf("/") + 1)); 
-		scanner_id = scanner_id.substring(scanner_id.lastIndexOf("/") + 1);
-		String msg = response.message();
-		Integer statusCode = response.code();
-		//System.out.println("response status code: "+ statusCode);
-		//System.out.println("response msg: "+ msg);
-		response.body().close();
+			Headers headers = response.headers();
+			String scanner_id = headers.value(0);
+			System.out.println("scanner_id: " + scanner_id.substring(scanner_id.lastIndexOf("/") + 1)); 
+			scanner_id = scanner_id.substring(scanner_id.lastIndexOf("/") + 1);
+			String msg = response.message();
+			Integer statusCode = response.code();
 
-		return scanner_id;
+			response.body().close();
+
+			return scanner_id;
+		}
+		catch(Exception e) {System.out.println("Connection error! \nExecution stopped!");
+		System.exit(1);
+		return null;}
+		
 	}
 
 
@@ -86,6 +91,7 @@ public class updateOrgUnits_multiThreading {
 		JSONArray JSONArrayContent = new JSONArray();
 		
 		while (finishScan.equals(false)) {
+			try {
 			OkHttpClient client = new OkHttpClient().newBuilder()
 					.build();
 			Request request = new Request.Builder()
@@ -102,10 +108,6 @@ public class updateOrgUnits_multiThreading {
 			String msg = response.message();
 			Integer statusCode = response.code();
 	
-			/*
-			if(statusCode != 200 || statusCode != 204) {
-				System.out.println("connection error");
-			}*/
 			//means scanner has finished
 			if(statusCode == 204) {
 				response.body().close();
@@ -123,6 +125,10 @@ public class updateOrgUnits_multiThreading {
 					++updatedRows;
 					JSONArrayContent.put(JSONArrayRows.getJSONObject(i));
 				}
+			}
+			}
+			catch(Exception e) {System.out.println("Connection error! \nExecution stopped!");
+			System.exit(1);
 			}
 		}
 		System.out.println(updatedRows+" OrgUnits need an update");
@@ -206,20 +212,22 @@ public class updateOrgUnits_multiThreading {
 			// Step 5 execution SQLQuery
 			st.executeUpdate(SQLQuery);
 			System.out.println("Loading done successfully!");
-			
+		
 			
 			Instant end = Instant.now();
 			LocalDateTime ldtStart = LocalDateTime.ofInstant(start, ZoneId.of("CET"));
 			LocalDateTime ldtEnd = LocalDateTime.ofInstant(end, ZoneId.of("CET"));
-			System.out.println("time spent: " + Duration.between(ldtStart, ldtEnd).toSeconds()+" seconds");
+			System.out.println("time spent: " + Duration.between(ldtStart, ldtEnd).getSeconds()+" seconds");
 			}
 		catch (SQLException e)
 		{
-			e.printStackTrace();
+			System.out.println("ERROR while loading data into database \nExecution stopped");
+			System.exit(1);
 		}
 		catch (ClassNotFoundException e)
 		{
-			e.printStackTrace();
+			System.out.println("ERROR:: ClassNotFoundException");
+			System.exit(1);
 		}
 		finally 
 		{
@@ -246,6 +254,7 @@ public class updateOrgUnits_multiThreading {
 		this.setDBpwd(props.getProperty("WIMEDSDBpwd"));
 		this.setHBaseURL(props.getProperty("url"));
 		this.setScannerTRbatch(props.getProperty("batchTR"));
+		this.setUseMultiThreading(props.getProperty("useMultithreadingHBaseToWIMEDS"));
 		String startTimeCTRL="";
 		startTimeCTRL = props.getProperty("thisExtraction");
 
@@ -266,6 +275,8 @@ public class updateOrgUnits_multiThreading {
     }
 	
 	
+	
+	
     //getters and setters
     
     public void setDBurl(String str)     {this.DBurl = str;}
@@ -281,5 +292,7 @@ public class updateOrgUnits_multiThreading {
     public void setHBaseURL(String str)     {this.HBaseURL = str;}
     public String getHBaseURL()             {return HBaseURL;}
     
+    public void setUseMultiThreading(String str)     {this.useMt = str;}
+    public String getUseMultiThreading()             {return useMt;}
     
 }

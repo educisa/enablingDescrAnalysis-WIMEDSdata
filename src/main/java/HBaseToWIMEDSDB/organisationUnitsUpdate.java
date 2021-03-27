@@ -122,7 +122,7 @@ public organisationUnitsUpdate() {}
 		Boolean finishScan = false;
 		String SQLQueryUpdate = "";
 		Integer calls = 0;
-		System.out.println("...starting update scan...");
+		System.out.println("...starting update scan and generating SQL queries if needed...");
 		while (finishScan.equals(false)) {
 			OkHttpClient client = new OkHttpClient().newBuilder()
 					.build();
@@ -252,13 +252,14 @@ public organisationUnitsUpdate() {}
 		Statement st = null;	
 		
 		try {
+			
 			//Step 1 : loading driver
 			Class.forName("org.postgresql.Driver");
 			//Step 2 : Connection
 			cn = DriverManager.getConnection(DBurl, DBLogin, DBPassword);
 			//Step 3 : creation statement
 			st = cn.createStatement();
-			
+			System.out.println("...Loading data into DB...");
 			// Step 5 execution SQLQuery
 			st.executeUpdate(SQLQuery);
 			System.out.println("Loading done successfully!");
@@ -267,7 +268,7 @@ public organisationUnitsUpdate() {}
 			Instant end = Instant.now();
 			LocalDateTime ldtStart = LocalDateTime.ofInstant(start, ZoneId.of("CET"));
 			LocalDateTime ldtEnd = LocalDateTime.ofInstant(end, ZoneId.of("CET"));
-			System.out.println("time spent: " + Duration.between(ldtStart, ldtEnd).toSeconds()+" seconds");
+			System.out.println("time spent: " + Duration.between(ldtStart, ldtEnd).getSeconds()+" seconds");
 			}
 		catch (SQLException e)
 		{

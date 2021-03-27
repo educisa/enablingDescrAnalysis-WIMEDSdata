@@ -75,7 +75,20 @@ public class ParallelWorker extends Thread{
 				levelnumber = resultJSONValue.getInt("level");
 				
 				
-				partialQuery += "UPDATE administrationunit SET parentid='"
+				partialQuery += "INSERT INTO AdministrationUnit VALUES ('"
+						+ id + "','"
+						+ parentid + "','"
+						+ name.replaceAll("'","''") + "','"
+						+ shortname.toString().replaceAll("'","''") + "','"
+						+ datelastupdated.substring(0,10) + "',"
+						+ leaf + ","
+						+ levelnumber + ",'"
+						+ address + "','"
+						+ url + "') ON CONFLICT ON CONSTRAINT id"
+								+ " DO"
+								+ "  UPDATE"
+								+ "  SET   "
+						+ "parentid='"
 						+parentid + "',"
 						+"name='"
 						+name.replaceAll("'","''") + "',"
@@ -91,7 +104,11 @@ public class ParallelWorker extends Thread{
 						+address+"',"
 						+"url='"
 						+url+"'"
-						+" WHERE id='"+id+"';\n";
+						+" WHERE AdministrationUnit.id='"+id+"';\n";
+								 
+				
+				
+				//if(id.equals("uo3srkbSp69")) System.out.println(shortname);
 			}
 		}
 		else {
@@ -140,7 +157,8 @@ public class ParallelWorker extends Thread{
 				datelastupdated = resultJSONValue.getString("lastUpdated");
 				leaf = resultJSONValue.getBoolean("leaf");
 				levelnumber = resultJSONValue.getInt("level");
-
+				
+				
 				partialQuery += "INSERT INTO AdministrationUnit VALUES ('"
 						+ id + "','"
 						+ parentid + "','"
@@ -150,7 +168,7 @@ public class ParallelWorker extends Thread{
 						+ leaf + ","
 						+ levelnumber + ",'"
 						+ address + "','"
-						+ url + "');\n";
+						+ url + "')";
 
 			}
 		}

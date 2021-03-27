@@ -17,13 +17,13 @@ public class mainUpdateDB_OrgUnits_multiThreading {
 
 		//creates a scanner with TimeRange config
 		String scanner_id = orgUnitsUpdate.getTRScannerID();
-		
 		JSONArray updateRowsContent = orgUnitsUpdate.updateData(scanner_id);
 		
-		int THREADS =  Runtime.getRuntime().availableProcessors();
+		int THREADS = 1;
+		if(orgUnitsUpdate.getUseMultiThreading().equals("true"))THREADS = Runtime.getRuntime().availableProcessors();
 		System.out.println("using "+ THREADS+" threads");
 
-		//call ParallelPartialQueryGenerator with isUpdate param = true
+		//call ParallelPartialQueryGenerator with isUpdate param = true (if its false it will generate a bulk operation with INSERT queries)
 		ParallelPartialQueryGenerator partialQueryGen = new ParallelPartialQueryGenerator(THREADS, true);
 		
 		String SQLQuery="";

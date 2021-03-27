@@ -19,7 +19,7 @@ public class updateDB_orgUnits {
 		String scanner_id = orgUnitsUpdate.getTRScannerID();
 		
 		String SQLQuery = orgUnitsUpdate.updateData(scanner_id);
-		System.out.println("Aquesta es la query: "+SQLQuery);
+		//System.out.println("Aquesta es la query: "+SQLQuery);
 		if(SQLQuery.equals(""))System.out.println("Everything up-to-date");
 		else {
 			String DBurl = orgUnitsUpdate.getDBurl();

@@ -117,7 +117,7 @@ public class ReqMedProcessMetadataExtraction {
 		Date dateData = df.parse(thisWIMEDSextractionDateTime);
 		if(dateMeta.after(dateData)) {
 			metadataUpdateNeeded=true;
-			System.out.println("metadata and metaVersion must be updated");
+			System.out.println("metadata and metaVersion (in rowKey) must be updated");
 			//get metadataVersion from config.properties and do metadataVersion+1
 			// load a properties file
 			props.load(in);

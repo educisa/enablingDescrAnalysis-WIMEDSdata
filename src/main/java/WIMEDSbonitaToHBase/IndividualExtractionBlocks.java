@@ -36,7 +36,7 @@ public class IndividualExtractionBlocks {
 	
 	//initial func
 	public void exportData() throws IOException {
-		
+		//extract data for each of the WIMEDS tables in control.properties
 		String[] tables = tablesNamesCSV.split(",");
 		for(int i = 0; i< tables.length; ++i) {
 			System.out.println("extracting "+tables[i]+" data");
@@ -68,7 +68,7 @@ public class IndividualExtractionBlocks {
 		int sum = 0;
 		//encode data for HBase
 		//do block partitions (if necessary).
-		//max of 10 MB (server limit)
+		//max block size -> 10 MB (server limit)
 		//divide the total bytes per 10 MB will give us the number of necessary blocks to send data
 		String value = contentJSONArray.toString();
 		int sizeInBytes = value.getBytes().length;
@@ -140,11 +140,10 @@ public class IndividualExtractionBlocks {
 		
 	}
 	
-	//per no crear la rowKey dins de RequestEncoding
 	public void generateRowKey() throws IOException {
 		String rootPath = Thread.currentThread().getContextClassLoader().getResource("").getPath();
 		String ctrlPath = rootPath + "control.properties";
-
+		/*
 		FileInputStream in = new FileInputStream(ctrlPath);
 
 		Properties props = new Properties();
@@ -157,16 +156,16 @@ public class IndividualExtractionBlocks {
 		mtdVersion = props.getProperty("metadataVersion");
 		setMetadataVersion(mtdVersion);
 		in.close();
-		
+		*/
 		//DateTime for the completeRowKey
 		DateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS");
 		Date date = new Date();
 		String currentTime = sdf.format(date).toString();
 		//create the complete RowKey, that is, completeRowKey and set it (the other ones will use completeRowKey, global var)
-		String crk = rkb+mtdVersion+'$'+currentTime;
+		String crk = this.rowKeyBase+this.metadataVersion+'$'+currentTime;
 		setCompleteRowKey(crk);
 		
-		//DateTime for new thisWIMEDSextractionDateTime
+		//DateTime for new thisWIMEDSextractionDateTime on control.properties
 		String pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSS'Z'";
 		SimpleDateFormat ZDateFormat = new SimpleDateFormat(pattern);
 		WIMEDSextractionTimeGV = ZDateFormat.format(date);
@@ -255,7 +254,7 @@ public class IndividualExtractionBlocks {
 		setTableName(props.getProperty("datatableName"));
 		setFamily(props.getProperty("family1"));
 		setRowKeyBase(props.getProperty("rowKeyBase"));
-		setMetadataVersion(props.getProperty("metadataVersion"));
+		setMetadataVersion(props.getProperty("metadataVersion"));//updated if needed in ReqMedProcessMetadataExtraction.java
 		setJSESSIONID(props.getProperty("jsessionid"));
 		System.out.println(props.getProperty("jsessionid"));
 		System.out.println(props.getProperty("bonitaToken"));
@@ -264,7 +263,7 @@ public class IndividualExtractionBlocks {
 		setURLAPI(props.getProperty("endpointBonitaRESTAPI"));
 		//JSESSIONID and X-Bonita-API-Token still not parametrized...I have errors getting the cookie
 		in.close();
-		//generate the completeRowKey
+		//generate the completeRowKey (still without the numBlock, to be determined)
 		generateRowKey();
 		/////////////
 	}

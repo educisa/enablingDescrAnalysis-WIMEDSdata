@@ -63,7 +63,6 @@ public class WIMEDSextraction {
 		HbaseUtilities hbase = new HbaseUtilities(ctrlPath);
 		hbase.createDataTable();
 		
-		
 		/*cada cop que es faci extraction/update de la data mirar si es necessari o no extreure metadata from the RequestMedicini process
 		 * fer crida a bpm REST API de Bonita per que em proporcioni el lastUpdated
 		 * si lastUpdated=>thisWIMEDSextractionDateTime llavors s'ha d'extreure metadata i data(canviar la metadataVersion i DateTime a la key)
