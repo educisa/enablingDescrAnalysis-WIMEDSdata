@@ -40,8 +40,8 @@ public class ReqMedProcessMetadataExtraction {
 
 		Properties props = new Properties();
 		props.load(in);
-		jsessionid = props.getProperty("jsessionid");
-		bonitaToken = props.getProperty("bonitaToken");
+		this.jsessionid = props.getProperty("jsessionid");
+		this.bonitaToken = props.getProperty("bonitaToken");
 		System.out.println(jsessionid);
 		System.out.println(bonitaToken);
 		//JSESSIONID and X-Bonita-API-Token still not parametrized...I have errors getting the cookie
@@ -70,6 +70,7 @@ public class ReqMedProcessMetadataExtraction {
 		}
 		catch(Exception e) {
 			System.out.println("ERROR: something wrong occured while trying to call Bonita REST API \n---PROCESS STOPPED---");
+			e.printStackTrace();
 			System.exit(1);
 		}
 	}

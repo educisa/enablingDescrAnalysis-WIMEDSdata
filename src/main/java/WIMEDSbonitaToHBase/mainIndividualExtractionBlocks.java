@@ -15,7 +15,7 @@ public class mainIndividualExtractionBlocks {
 		HbaseUtilities hbase = new HbaseUtilities(ctrlPath);
 		hbase.createDataTable();
 		
-		//call to RESTAuth and save JSESSIONID and X-Bonita-API-Token in control.properties
+		//call to RESTAuth and save JSESSIONID and X-Bonita-API-Token in control.properties (BonitaRESTAuth.java)
 		
 		//cridar aviam si es necessita agafar també la metadata.
 		//tinc implementat el codi per actualitzar la rowKey si es necessita metadata update.

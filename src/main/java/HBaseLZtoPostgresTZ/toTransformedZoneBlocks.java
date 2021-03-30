@@ -374,22 +374,6 @@ public class toTransformedZoneBlocks {
 					+ healthFacilityName + "',"
 					+ quantity + ","
 					+ quantityReceived + ");\n";
-			
-			/*
-			else {
-				SQLQuery += "INSERT INTO shipmentR VALUES ("
-						+ id + ",'"
-						+ shipmentDateCreationString + "','"
-						+ shipmentStatus + "','"
-						+ EDDstring + "','"
-						+ shippedDateString + "',"
-						+ null + ","
-						+ requestID + ",'"
-						+ medicalSupplyName + "','"
-						+ healthFacilityName + "',"
-						+ quantity + ","
-						+ quantityReceived + ");\n";
-			}*/
 			System.out.println(SQLQuery);
 		}
 		

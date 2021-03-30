@@ -10,8 +10,10 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.sql.Timestamp;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.Date;
 import java.util.Properties;
@@ -30,7 +32,8 @@ public class IndividualExtractionBlocks {
 		
 	int REQUEST_maxSIZE_BYTES = 10000000; //10 MB
 	String tableName, family, rowKeyBase, metadataVersion, completeRowKey, jsessionid, bonitaToken,
-	WIMEDSextractionTimeGV, urlAPI, tablesNamesCSV;
+	WIMEDSextractionTimeGV, urlAPI, tablesNamesCSV, WIMEDSextractionTimestamp;
+	long thisExtractionTS;
 	
 	public IndividualExtractionBlocks(){}
 	
@@ -46,6 +49,8 @@ public class IndividualExtractionBlocks {
 	
 	
 	public void exportWIMEDSdata(String WIMEDStableName) throws IOException {
+		
+		try {
 		OkHttpClient client = new OkHttpClient().newBuilder()
 				.build();
 		Request request = new Request.Builder()
@@ -53,7 +58,6 @@ public class IndividualExtractionBlocks {
 				.method("GET", null)
 				.addHeader("Cookie", "JSESSIONID="+jsessionid+"; X-Bonita-API-Token="+bonitaToken+";")
 				.build();
-
 		Response response = client.newCall(request).execute();
 		ResponseBody body = response.body();
 
@@ -61,6 +65,11 @@ public class IndividualExtractionBlocks {
 
 		JSONArray JSONArray = new JSONArray(bodyString); 
 		putData(JSONArray, WIMEDStableName);
+		}
+		catch(Exception e) {
+			System.out.println("Connection error while making REST API call \nExecution stopped!");
+			System.exit(1);
+		}
 	}
 	
 	
@@ -74,9 +83,12 @@ public class IndividualExtractionBlocks {
 		int sizeInBytes = value.getBytes().length;
 		System.out.println("size in bytes of the string (all rows): "+ sizeInBytes);
 		//10 MB = 10000000 bytes, so sizeInBytes/10000000
+		
 		int numBlocks = sizeInBytes/REQUEST_maxSIZE_BYTES;
 		if(sizeInBytes%REQUEST_maxSIZE_BYTES != 0) numBlocks+=1;
-		System.out.println("el numero de blocks necessaris per enviar les dades al servidor son: "+numBlocks+" blocks");
+		
+		
+		//System.out.println("el numero de blocks necessaris per enviar les dades al servidor son: "+numBlocks+" blocks");
 		//numBlocks: total number of blocks needed to send data to server
 		//blockNum: number of the individual block (identifier)
 
@@ -143,20 +155,6 @@ public class IndividualExtractionBlocks {
 	public void generateRowKey() throws IOException {
 		String rootPath = Thread.currentThread().getContextClassLoader().getResource("").getPath();
 		String ctrlPath = rootPath + "control.properties";
-		/*
-		FileInputStream in = new FileInputStream(ctrlPath);
-
-		Properties props = new Properties();
-		props.load(in);
-		//gets
-		String mtdVersion = "";
-		String rkb = "";
-		rkb = props.getProperty("rowKeyBase");
-		setRowKeyBase(rkb);
-		mtdVersion = props.getProperty("metadataVersion");
-		setMetadataVersion(mtdVersion);
-		in.close();
-		*/
 		//DateTime for the completeRowKey
 		DateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS");
 		Date date = new Date();
@@ -169,6 +167,11 @@ public class IndividualExtractionBlocks {
 		String pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSS'Z'";
 		SimpleDateFormat ZDateFormat = new SimpleDateFormat(pattern);
 		WIMEDSextractionTimeGV = ZDateFormat.format(date);
+		//save WIMEDSextractionTimestimp, saved in properties file once the execution has finished
+		LocalDateTime now = LocalDateTime.now();
+		Timestamp timestamp = Timestamp.valueOf(now);
+		thisExtractionTS = timestamp.getTime(); //returns a long
+		WIMEDSextractionTimestamp = String.valueOf(thisExtractionTS);
 	}
 	
 
@@ -197,7 +200,7 @@ public class IndividualExtractionBlocks {
 		encodedColumn = '"'+encodedColumn+'"';
 		encodedValue = '"'+encodedValue+'"';
 
-		String JSONrowPUT = "{\"Row\":[{\"key\":"+encodedKey+", \"Cell\": [{\"column\":"+encodedColumn+", \"$\":"+encodedValue+"}]}]}";
+		String JSONrowPUT = "{\"Row\":[{\"key\":"+encodedKey+", \"Cell\": [{\"column\":"+encodedColumn+", \"$\":"+encodedValue+"}]}]}";             
 		return JSONrowPUT;
 	}
 
@@ -229,12 +232,16 @@ public class IndividualExtractionBlocks {
 		props.load(in);
 		String prev = props.getProperty("thisWIMEDSextractionDateTime");
 		System.out.println("last WIMEDS DB extraction was made on: "+ prev);
+		String prevExtractionTS=props.getProperty("thisWIMEDSextractionTimestamp");
+		System.out.println("last WIMEDS DB extraction was made on timestamp: "+ prevExtractionTS);
 		in.close();
 		
 		FileOutputStream out = new FileOutputStream(ctrlPath);
 		//update thisWIMEDSExtractionDateTime in control.properties
 		props.setProperty("thisWIMEDSextractionDateTime", WIMEDSextractionTimeGV);
 		System.out.println("this WIMEDS DB extraction has been done at: "+ WIMEDSextractionTimeGV);
+		props.setProperty("thisWIMEDSextractionTimestamp", WIMEDSextractionTimestamp);
+		System.out.println("this WIMEDS DB extraction has been done at timestamp: "+ WIMEDSextractionTimestamp);
 		props.store(out, null);
 		out.close();
 		/////////
