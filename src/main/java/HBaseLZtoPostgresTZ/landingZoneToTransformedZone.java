@@ -205,7 +205,7 @@ public class landingZoneToTransformedZone {
 				String decodedValue="";
 				try {
 					decodedValue = new String(dataBytes, StandardCharsets.UTF_8.name());
-					if(j==1)System.out.println(decodedValue);
+					//if(j==1)System.out.println(decodedValue);
 
 				} catch (UnsupportedEncodingException e) {
 					e.printStackTrace();
@@ -220,21 +220,24 @@ public class landingZoneToTransformedZone {
 				}
 				
 				else if(tables[j].equals("Manufacturer")) {
-					System.out.println("Manufacturerrrrrrrrrr");
-					//SQLQuery=getManufacturerQuery(decodedValue);
+					SQLQuery=getManufacturerQuery(decodedValue);
+					LoadInDB(SQLQuery, tz_DBurl, tz_DBusr, tz_DBpwd);
 				}
 				else if(tables[j].equals("Disease")) {
-					System.out.println("Disease");
-					//SQLQuery=getDiseaseQuery(decodedValue);
+					SQLQuery=getDiseaseQuery(decodedValue);
+					LoadInDB(SQLQuery, tz_DBurl, tz_DBusr, tz_DBpwd);
 				}
 				else if(tables[j].equals("MedicalSupply")) {
-					//SQLQuery=getMedicalSupplyQuery(decodedValue);
+					SQLQuery=getMedicalSupplyQuery(decodedValue);
+					LoadInDB(SQLQuery, tz_DBurl, tz_DBusr, tz_DBpwd);
 				}
 				else if(tables[j].equals("RequestStatus")) {
-					//SQLQuery=getRequestStatusQuery(decodedValue);
+					SQLQuery=getRequestStatusQuery(decodedValue);
+					LoadInDB(SQLQuery, tz_DBurl, tz_DBusr, tz_DBpwd);
 				}
 				else if(tables[j].equals("ShipmentR")) {
-					//SQLQuery=getShipmentRQuery(decodedValue);
+					SQLQuery=getShipmentRQuery(decodedValue);
+					LoadInDB(SQLQuery, tz_DBurl, tz_DBusr, tz_DBpwd);
 				}
 
 			}
@@ -249,9 +252,8 @@ public class landingZoneToTransformedZone {
 	
 	//not using multiThreading
 		public String getRequestQuery(String requestData) {
-			System.out.println("...generating SQLQuery from HBase data...");
+			System.out.println("...generating requests SQLQuery from HBase data...");
 			System.out.println("WITHOUT making use of multithreading");
-			//String SQLQuery = "TRUNCATE TABLE requests;\n";
 			String SQLQuery = "";
 			//see if we have more or one Request in the response, if there is one, create an array an insert it there
 			JSONArray jsonArrayReq = new JSONArray();
@@ -308,11 +310,9 @@ public class landingZoneToTransformedZone {
 			return SQLQuery;
 		}
 		
-		//not using multithreading to generate SQLQuery
 		public String getManufacturerQuery(String ManufacturerData) {
-			System.out.println("...generating SQLQuery from HBase data...");
-			String SQLQuery = "TRUNCATE TABLE Manufacturer;\n";
-			
+			System.out.println("...generating manufacturers SQLQuery from HBase data...");
+			String SQLQuery="";
 			JSONArray jsonArrayDisease = new JSONArray(ManufacturerData);
 			for(int i = 0;i<jsonArrayDisease.length(); ++i) {
 				int id;
@@ -324,16 +324,18 @@ public class landingZoneToTransformedZone {
 
 				SQLQuery += "INSERT INTO Manufacturer VALUES ("
 						+ id + ",'"
-						+ name + "');\n";
+						+ name + "') ON CONFLICT ON CONSTRAINT manufacturer_pkey"
+						+" DO UPDATE SET"
+						+" id="+id+","
+						+" name='"+name+"';\n";
 			}
 			return SQLQuery;
 		}
 		
 		
 		public String getDiseaseQuery(String DiseaseData) {
-			System.out.println("...generating SQLQuery from HBase data...");
-			String SQLQuery = "TRUNCATE TABLE Disease;\n";
-			
+			System.out.println("...generating diseases SQLQuery from HBase data...");
+			String SQLQuery="";
 			JSONArray jsonArrayDisease = new JSONArray(DiseaseData);
 			for(int i = 0;i<jsonArrayDisease.length(); ++i) {
 				int id;
@@ -356,21 +358,28 @@ public class landingZoneToTransformedZone {
 						medicalSuppliesIDs.add(medicalSuppliesJSONObj.getInt("persistenceId"));
 					}
 				}
+			
+				String medsuppliesids=medicalSuppliesIDs.toString();
+				String medsuppliesidsMod=medsuppliesids.replace("[", "{");
+				medsuppliesidsMod=medsuppliesidsMod.replace("]", "}");
 
-		
 				SQLQuery += "INSERT INTO Disease VALUES ("
 						+ id + ",'"
 						+ name + "','"
 						+ completeName + "',ARRAY"
-						+ medicalSuppliesIDs + ");\n";
+						+ medicalSuppliesIDs + ") ON CONFLICT ON CONSTRAINT disease_pkey"
+						+ " DO UPDATE SET"
+						+ " name='"+name+"',"
+						+ " completeName='"+completeName+"',"
+						+ " medicalsuppliesids='"+medsuppliesidsMod+"';\n";
 			}
 			return SQLQuery;
 		}
 		
+		
 		public String getMedicalSupplyQuery(String medicalSupplyData) {
-			System.out.println("...generating SQLQuery from HBase data...");
-			String SQLQuery = "TRUNCATE TABLE MedicalSupply;\n";
-			
+			System.out.println("...generating medical supplies SQLQuery from HBase data...");
+			String SQLQuery="";
 			JSONArray jsonArrayMedicalSupply = new JSONArray(medicalSupplyData);
 			
 			for(int i = 0;i<jsonArrayMedicalSupply.length(); ++i) {
@@ -401,22 +410,32 @@ public class landingZoneToTransformedZone {
 							+ id + ",'"
 							+ name + "','"
 							+ completeName + "',"
-							+ manufacturerEmpty + ");\n";
+							+ manufacturerEmpty + ") ON CONFLICT ON CONSTRAINT medicalsupply_pkey"
+							+ " DO UPDATE SET"
+							+ " name='"+name+"',"
+							+ " completename='"+completeName+"';\n";
 				}
 				else {
+					String manufacturersids=manufacturersIDs.toString();
+					String manufacturersidsMod=manufacturersids.replace("[", "{");
+					manufacturersidsMod=manufacturersidsMod.replace("]", "}");
 					SQLQuery += "INSERT INTO MedicalSupply VALUES ("
 							+ id + ",'"
 							+ name + "','"
 							+ completeName + "',ARRAY"
-							+ manufacturersIDs + ");\n";
+							+ manufacturersIDs + ") ON CONFLICT ON CONSTRAINT medicalsupply_pkey"
+							+ " DO UPDATE SET"
+							+ " name='"+name+"',"
+							+ " completename='"+completeName+"',"
+							+ " manufacturersids='"+manufacturersidsMod+"';\n";
 				}
 			}
 			return SQLQuery;
 		}
 		
 		public String getRequestStatusQuery(String RequestStatusData) {
-			System.out.println("...generating SQLQuery from HBase data...");
-			String SQLQuery = "TRUNCATE TABLE RequestStatus;\n";
+			System.out.println("...generating requeststatus SQLQuery from HBase data...");
+			String SQLQuery="";
 			
 			JSONArray jsonArrayDisease = new JSONArray(RequestStatusData);
 			for(int i = 0;i<jsonArrayDisease.length(); ++i) {
@@ -429,23 +448,26 @@ public class landingZoneToTransformedZone {
 
 				SQLQuery += "INSERT INTO RequestStatus VALUES ("
 						+ id + ",'"
-						+ name + "');\n";
+						+ name + "') ON CONFLICT ON CONSTRAINT requeststatus_pkey"
+						+ " DO UPDATE SET"
+						+ " name='"+name+"';\n"; 
 			}
 			return SQLQuery;
 		}
 		
 		public String getShipmentRQuery(String shipmentRdata) {
-			System.out.println("...generating SQLQuery from HBase data...");
-			String SQLQuery = "TRUNCATE TABLE shipmentR;\n";
+			System.out.println("...generating shipmentr SQLQuery from HBase data...");
+			String SQLQuery="";
 			
 			JSONArray jsonArrayship = new JSONArray(shipmentRdata);
 			
 			for(int i = 0;i<jsonArrayship.length(); ++i) {
-				boolean received = false;
-				int id, quantity, requestID;
+				int id, quantity, requestID, trackingNumber;
 				Integer quantityReceived = null;//int can not be null
 				String receptionDateString = null;
-				String medicalSupplyName, shipmentStatus, shipmentDateCreationString, EDDstring, healthFacilityName, shippedDateString;
+				String courierName = null;
+				String medicalSupplyName, shipmentStatus, shipmentDateCreationString, EDDstring, healthFacilityName, 
+				shippedDateString;
 				
 				JSONObject shipmentJSONObj = jsonArrayship.getJSONObject(i);
 				id = shipmentJSONObj.getInt("persistenceId");
@@ -453,35 +475,63 @@ public class landingZoneToTransformedZone {
 				healthFacilityName = shipmentJSONObj.getString("healthFacilityName");
 				Object aObj = shipmentJSONObj.get("quantityReceived");
 				if (aObj instanceof Integer) {
-					quantityReceived = shipmentJSONObj.getInt("quantityReceived");
+					quantityReceived = shipmentJSONObj.getInt("quantityReceived");//if not received is null
 				}
-				aObj = shipmentJSONObj.get("receptionDate");
+				aObj = shipmentJSONObj.get("receptionDate"); //if not received is null
 				if (aObj instanceof String) {
 					receptionDateString = shipmentJSONObj.getString("receptionDate");
-					received = true;
 				}
 				medicalSupplyName = shipmentJSONObj.getJSONObject("medicalSupply").getString("name");
 				requestID = shipmentJSONObj.getJSONObject("request").getInt("persistenceId");
 				shipmentDateCreationString = shipmentJSONObj.getString("dateOfCreation");
 				shipmentDateCreationString = shipmentDateCreationString.substring(0,10);
 				EDDstring = shipmentJSONObj.getString("edd");
+				aObj = shipmentJSONObj.get("shippedDate");// if not shipped is null
+				if (aObj instanceof String) {
+					courierName = shipmentJSONObj.getString("shippedDate");
+				}
 				shippedDateString = shipmentJSONObj.getString("shippedDate");
 				shipmentStatus = shipmentJSONObj.getString("shipmentStatus");
-
+				aObj = shipmentJSONObj.get("courierName");// sometimes courierName is null
+				if (aObj instanceof String) {
+					courierName = shipmentJSONObj.getString("courierName");
+				}
+				trackingNumber = shipmentJSONObj.getInt("trackingNumber");
+				
 				SQLQuery += "INSERT INTO shipmentR VALUES ("
 						+ id + ",'"
 						+ shipmentDateCreationString + "','"
 						+ shipmentStatus + "','"
-						+ EDDstring + "','"
-						+ shippedDateString + "',";
+						+ EDDstring + "','";
+				if(shippedDateString==null)SQLQuery+=null+",";
+				else SQLQuery+=shippedDateString+"',";
 				if(receptionDateString == null)SQLQuery+=null + ",";
 				else SQLQuery += "'"+receptionDateString + "',";
 				SQLQuery += requestID + ",'"
 						+ medicalSupplyName + "','"
 						+ healthFacilityName + "',"
-						+ quantity + ","
-						+ quantityReceived + ");\n";
-				System.out.println(SQLQuery);
+						+ quantity + ",";
+				if(quantityReceived == null)SQLQuery+=null + ",";
+				else SQLQuery += quantityReceived+",";
+				if(courierName == null)SQLQuery+=null + ",";
+				else SQLQuery += "'"+courierName+"',";
+				SQLQuery+= trackingNumber+") ON CONFLICT ON CONSTRAINT shipmentr_pkey"
+						+ " DO UPDATE SET"
+						+ " shipmentcreationdate='"+shipmentDateCreationString+"',"
+						+ " shipmentstatus='"+shipmentStatus+"',"
+						+ " EDD='"+EDDstring+"',";
+				if(shippedDateString==null)SQLQuery+= " shippedDate="+shippedDateString+",";
+				else SQLQuery+= " shippedDate='"+shippedDateString+"',";
+				if(receptionDateString==null)SQLQuery+= " receptionDate="+receptionDateString+",";
+				else SQLQuery+= " receptionDate='"+receptionDateString+"',";	
+						SQLQuery+= " medicalsupplyname='"+medicalSupplyName+"',"
+						+ " healthFacilityName='"+healthFacilityName+"',"
+						+ " quantity="+quantity+","
+						+ " quantityreceived="+quantityReceived+",";
+				if(courierName==null)SQLQuery+= " courierName="+courierName+",";
+				else SQLQuery+= " courierName='"+courierName+"',";
+						SQLQuery+=" trackingNumber="+trackingNumber+";\n";
+
 			}
 			
 			
