@@ -144,72 +144,73 @@ public fullextractAdminUnitmultiThreading() {}
 	}
 	
 	//generating SQLQuery not using using multithreading
-	public String getSQLQueryAdminUnitnoMT() throws IOException {
-		//getting data from Administration Units from DEV-Org-Units Table landing zone HBase
-		String scanner_id = getScannerId();
-		JSONArray content = getDataFromHBase(scanner_id);
-		String SQLQuery="";
-		System.out.println("length del content sense utilitzar MULtithtreading: " + content.length());
-		for(int i =0; i < content.length(); ++i) {
-			//generate query for each adminunit between the range low,high
-			JSONObject AdminUnitObj = content.getJSONObject(i);
-			JSONArray encodedJSONArray = AdminUnitObj.getJSONArray("Cell");
-			JSONObject encodedJSONObject = encodedJSONArray.getJSONObject(0);
-			String encodedValue = encodedJSONObject.getString("$");
-			//decode the encodedValue
-			byte[] dataBytes = Base64.getDecoder().decode(encodedValue);
-			String decodedValue="";
-			try {
-				decodedValue = new String(dataBytes, StandardCharsets.UTF_8.name());
-			} catch (UnsupportedEncodingException e) {
-				e.printStackTrace();
+		public String getSQLQueryAdminUnitnoMT() throws IOException {
+			//getting data from Administration Units from DEV-Org-Units Table landing zone HBase
+			String scanner_id = getScannerId();
+			JSONArray content = getDataFromHBase(scanner_id);
+			String SQLQuery="";
+			System.out.println("length del content sense utilitzar MULtithtreading: " + content.length());
+			for(int i =0; i < content.length(); ++i) {
+				//generate query for each adminunit between the range low,high
+				JSONObject AdminUnitObj = content.getJSONObject(i);
+				JSONArray encodedJSONArray = AdminUnitObj.getJSONArray("Cell");
+				JSONObject encodedJSONObject = encodedJSONArray.getJSONObject(0);
+				String encodedValue = encodedJSONObject.getString("$");
+				//decode the encodedValue
+				byte[] dataBytes = Base64.getDecoder().decode(encodedValue);
+				String decodedValue="";
+				try {
+					decodedValue = new String(dataBytes, StandardCharsets.UTF_8.name());
+				} catch (UnsupportedEncodingException e) {
+					e.printStackTrace();
+				}
+				//transform it to JSON to get the fields we are interested in
+				JSONObject resultJSONValue = new JSONObject(decodedValue);
+
+
+				String parentid = "";
+				if(resultJSONValue.has("parent")) {
+					JSONObject JSONObjparent = resultJSONValue.getJSONObject("parent");
+					parentid = JSONObjparent.getString("id");
+				}
+
+				String url = null;//just some organisationUnits have (e.g., http://www.hospitalclinic.org)
+				if(resultJSONValue.has("url")) {
+					url = resultJSONValue.getString("url");
+					url = url.replaceAll("'","''");
+				}
+
+				String address = null;//just some organisationUnits have (e.g., calle Villarroel, 170, 08036 Barcelona, Spain)
+				if(resultJSONValue.has("address")) {
+					address = resultJSONValue.getString("address");
+					address = address.replaceAll("'","''");
+				}
+
+				String id, name, shortname, datelastupdated;
+				Boolean leaf;
+				Integer levelnumber;
+				id = resultJSONValue.getString("id");
+				name = resultJSONValue.getString("name");
+				shortname = resultJSONValue.getString("shortName");
+				datelastupdated = resultJSONValue.getString("lastUpdated");
+				leaf = resultJSONValue.getBoolean("leaf");
+				levelnumber = resultJSONValue.getInt("level");
+
+				SQLQuery += "INSERT INTO AdministrationUnit VALUES ('"
+						+ id + "','"
+						+ parentid + "','"
+						+ name.replaceAll("'","''") + "','"
+						+ shortname.toString().replaceAll("'","''") + "','"
+						+ datelastupdated.substring(0,10) + "',"
+						+ leaf + ","
+						+ levelnumber + ",'"
+						+ address + "','"
+						+ url + "');\n";
 			}
-			//transform it to JSON to get the fields we are interested in
-			JSONObject resultJSONValue = new JSONObject(decodedValue);
-
-
-			String parentid = "";
-			if(resultJSONValue.has("parent")) {
-				JSONObject JSONObjparent = resultJSONValue.getJSONObject("parent");
-				parentid = JSONObjparent.getString("id");
-			}
-
-			String url = null;//just some organisationUnits have (e.g., http://www.hospitalclinic.org)
-			if(resultJSONValue.has("url")) {
-				url = resultJSONValue.getString("url");
-				url = url.replaceAll("'","''");
-			}
-
-			String address = null;//just some organisationUnits have (e.g., calle Villarroel, 170, 08036 Barcelona, Spain)
-			if(resultJSONValue.has("address")) {
-				address = resultJSONValue.getString("address");
-				address = address.replaceAll("'","''");
-			}
-
-			String id, name, shortname, datelastupdated;
-			Boolean leaf;
-			Integer levelnumber;
-			id = resultJSONValue.getString("id");
-			name = resultJSONValue.getString("name");
-			shortname = resultJSONValue.getString("shortName");
-			datelastupdated = resultJSONValue.getString("lastUpdated");
-			leaf = resultJSONValue.getBoolean("leaf");
-			levelnumber = resultJSONValue.getInt("level");
-
-			SQLQuery += "INSERT INTO AdministrationUnit VALUES ('"
-					+ id + "','"
-					+ parentid + "','"
-					+ name.replaceAll("'","''") + "','"
-					+ shortname.toString().replaceAll("'","''") + "','"
-					+ datelastupdated.substring(0,10) + "',"
-					+ leaf + ","
-					+ levelnumber + ",'"
-					+ address + "','"
-					+ url + "');\n";
+			
+			return SQLQuery;
 		}
-		
-		return SQLQuery;
-	}
+	
 	
 	//call this function when extracting data=>update extraction times at props
 	public void setExtractionTimes(String ctrlPath) throws IOException {

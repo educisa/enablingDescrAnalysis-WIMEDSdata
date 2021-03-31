@@ -11,10 +11,12 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
+import java.text.ParseException;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
 import java.util.Properties;
@@ -39,6 +41,7 @@ public class landingZoneToTransformedZone {
 	bodyScanner, scannerTRbatch;
 	long tz_thisExtractionTS;
 	String thisWIMEDSextractionTS;
+	List<String> tablesMultiThreadList;
 	
 	
 	
@@ -83,7 +86,7 @@ public class landingZoneToTransformedZone {
 		Boolean finishScan=false;
 		int calls = 0;
 		
-		JSONArray JSONArrayTotalRows = new JSONArray();
+		JSONArray JSONArrayRows = new JSONArray();
 		while(finishScan.equals(false)) {
 			
 			try {
@@ -97,6 +100,7 @@ public class landingZoneToTransformedZone {
 				Response response = client.newCall(request).execute();
 				ResponseBody body = response.body();
 				++calls;
+				System.out.println("call number: "+ calls);
 				String content = response.body().string();
 				Headers headers = response.headers();
 
@@ -112,66 +116,9 @@ public class landingZoneToTransformedZone {
 
 				else {
 					JSONObject JSONObjectContent = new JSONObject(content);
+				    JSONArrayRows = (JSONArray) JSONObjectContent.get("Row");
 					
-					JSONArray JSONArrayRows = (JSONArray) JSONObjectContent.get("Row");
-					JSONArrayTotalRows.put(JSONArrayRows);
 					System.out.println("this is the lenght of the JSONArrayRow :"+JSONArrayRows.length());
-					//for each rows retrieve the values inside each of the columns
-				/*
-					for (int i = 0; i < JSONArrayRows.length(); i++) {
-
-						for(int j = 0; j < tables.length; ++j) {
-							System.out.println(i+"-"+j+"->"+tables[j]);
-							JSONObject RowObj = JSONArrayRows.getJSONObject(i);
-							JSONArray encodedJSONArray = RowObj.getJSONArray("Cell");
-							//cada JSONObject(i) es una column, per exemple JSONObject(0) son les diseases
-							//JSONObject(1) son els manufacturers
-							JSONObject encodedJSONObject = encodedJSONArray.getJSONObject(i);
-							String encodedValue = encodedJSONObject.getString("$");
-							//decode the encodedValue
-							byte[] dataBytes = Base64.getDecoder().decode(encodedValue);
-							String decodedValue="";
-							try {
-								decodedValue = new String(dataBytes, StandardCharsets.UTF_8.name());
-								if(j==1)System.out.println(decodedValue);
-
-							} catch (UnsupportedEncodingException e) {
-								e.printStackTrace();
-							}
-							
-							String SQLQuery = "";
-							if(tables[j].equals("Request")) {
-								//if(tablesMultiThread.contains(tables[i]))SQLQuery=getRequestQueryMT(decodedValue, tables[i]);
-								//else SQLQuery = getRequestQuery(decodedValue);
-								//SQLQuery = getRequestQuery(decodedValue);
-								//LoadInDB(SQLQuery, tz_DBurl, tz_DBusr, tz_DBpwd);
-							}
-							
-							else if(tables[j].equals("Manufacturer")) {
-								System.out.println("Manufacturerrrrrrrrrr");
-								//SQLQuery=getManufacturerQuery(decodedValue);
-							}
-							else if(tables[j].equals("Disease")) {
-								System.out.println("Disease");
-								//SQLQuery=getDiseaseQuery(decodedValue);
-							}
-							else if(tables[j].equals("MedicalSupply")) {
-								//SQLQuery=getMedicalSupplyQuery(decodedValue);
-							}
-							else if(tables[j].equals("RequestStatus")) {
-								//SQLQuery=getRequestStatusQuery(decodedValue);
-							}
-							else if(tables[j].equals("ShipmentR")) {
-								//SQLQuery=getShipmentRQuery(decodedValue);
-							}
-
-						}
-					}*/
-					/*
-					PrintStream fileStream = new PrintStream("outputLZtoTZ.txt");
-					System.setOut(fileStream);
-					System.out.println(JSONObjectContent);
-					*/
 				}
 				
 			}
@@ -181,65 +128,61 @@ public class landingZoneToTransformedZone {
 		}
 
 		//System.out.println(JSONArrayTotalRows);
-		//System.out.println(calls);
-		return JSONArrayTotalRows;
+		System.out.println("number of scanner calls: "+calls);
+		return JSONArrayRows;
 	}
 	
-	public void exportDataToTZ(JSONArray JSONArrayTotalRows) throws FileNotFoundException {
-		String[] tables = tablesNamesCSV.split(",");
-		String encodedValue="";
+	public void exportDataToTZ(JSONArray JSONArrayRows) throws FileNotFoundException {
+		
 		//for each rows retrieve the values inside each of the columns
-		System.out.println(JSONArrayTotalRows.length());
-		for (int i = 0; i < JSONArrayTotalRows.length(); i++) {
-			JSONArray RowArray = JSONArrayTotalRows.getJSONArray(i);
-			JSONObject RowObj = RowArray.getJSONObject(i);
+		System.out.println("el total de rows agafades de HBase es: "+JSONArrayRows.length());
+		for (int i = 0; i < JSONArrayRows.length(); i++) {
+			//JSONArray RowArray = JSONArrayRows.getJSONArray(i);
+			JSONObject RowObj = JSONArrayRows.getJSONObject(i);
+			System.out.println("la size de la row es: "+ RowObj.length());
 			JSONArray encodedJSONArray = RowObj.getJSONArray("Cell");
-			for(int j = 0; j < tables.length; ++j) {
-				System.out.println(i+"-"+j);
-				//cada JSONObject(i) es una column, per exemple JSONObject(0) son les diseases
-				//JSONObject(1) son els manufacturers
-				JSONObject encodedJSONObject = encodedJSONArray.getJSONObject(j);
-				encodedValue = encodedJSONObject.getString("$");
-				//decode the encodedValue
-				byte[] dataBytes = Base64.getDecoder().decode(encodedValue);
-				String decodedValue="";
-				try {
-					decodedValue = new String(dataBytes, StandardCharsets.UTF_8.name());
-					//if(j==1)System.out.println(decodedValue);
+			System.out.println("la size de lo de dins de la Cell es: "+encodedJSONArray.length());
 
+			for(int j = 0; j < encodedJSONArray.length(); ++j) {
+				//cada encodedJSONArray(j) és una columna, el problema es saber quina és
+				System.out.println(i+"-"+j);
+				//AGAFAR LA COLUMN DE DINS DEL encododedJSONArray.get(j) !!!!! :)))))))
+				JSONObject dataCell = (JSONObject) encodedJSONArray.get(j);
+				
+				String encodedColumn = dataCell.getString("column");
+				byte[] dataBytes = Base64.getDecoder().decode(encodedColumn);
+				String decodedColumn="";
+				try {
+					decodedColumn = new String(dataBytes, StandardCharsets.UTF_8.name());
+					System.out.println(decodedColumn);
 				} catch (UnsupportedEncodingException e) {
 					e.printStackTrace();
 				}
-
-				String SQLQuery = "";
-				if(tables[j].equals("Request")) {
-					//if(tablesMultiThread.contains(tables[i]))SQLQuery=getRequestQueryMT(decodedValue, tables[i]);
-					//else SQLQuery = getRequestQuery(decodedValue);
-					SQLQuery = getRequestQuery(decodedValue);
-					LoadInDB(SQLQuery, tz_DBurl, tz_DBusr, tz_DBpwd);
+				
+				String encodedValue = dataCell.getString("$");
+				String decodedValue="";
+				dataBytes = Base64.getDecoder().decode(encodedValue);
+				try {
+					decodedValue = new String(dataBytes, StandardCharsets.UTF_8.name());
+				} catch (UnsupportedEncodingException e) {
+					e.printStackTrace();
 				}
 				
-				else if(tables[j].equals("Manufacturer")) {
-					SQLQuery=getManufacturerQuery(decodedValue);
-					LoadInDB(SQLQuery, tz_DBurl, tz_DBusr, tz_DBpwd);
+				//un cop ja tinc la decodedColumn agafo només el columnIdentifier
+				//també tinc decodedValue
+				String columnIdentifier = decodedColumn.substring(5, decodedColumn.length()); //pos 5 is next to ':' (e.g., Data:Request)
+				System.out.println(columnIdentifier);
+				
+				//en el control.properties tenim totes les TZtables que volem dins la transformedZone (potser no les voldriem totes..)
+				//per això mirem si, per cada una de les columnes extretes (columnIdentifier) esta en les TZtables array contains it.
+				//si la conté enviem el nom de la columna a undistribuidor que envia a fer una query o una altre segons la column
+				String[] tables = tablesNamesCSV.split(",");
+				List tablesList = Arrays.asList(tables);
+				if(tablesList.contains(columnIdentifier)) {
+					//cridar a organitzador de generacions de SQLQueries
+					queryGenerator(columnIdentifier, decodedValue);
 				}
-				else if(tables[j].equals("Disease")) {
-					SQLQuery=getDiseaseQuery(decodedValue);
-					LoadInDB(SQLQuery, tz_DBurl, tz_DBusr, tz_DBpwd);
-				}
-				else if(tables[j].equals("MedicalSupply")) {
-					SQLQuery=getMedicalSupplyQuery(decodedValue);
-					LoadInDB(SQLQuery, tz_DBurl, tz_DBusr, tz_DBpwd);
-				}
-				else if(tables[j].equals("RequestStatus")) {
-					SQLQuery=getRequestStatusQuery(decodedValue);
-					LoadInDB(SQLQuery, tz_DBurl, tz_DBusr, tz_DBpwd);
-				}
-				else if(tables[j].equals("ShipmentR")) {
-					SQLQuery=getShipmentRQuery(decodedValue);
-					LoadInDB(SQLQuery, tz_DBurl, tz_DBusr, tz_DBpwd);
-				}
-
+				
 			}
 
 		}
@@ -250,6 +193,36 @@ public class landingZoneToTransformedZone {
 		*/
 	}
 	
+	private void queryGenerator(String columnIdentifier, String decodedValue) {
+		//only tables in tablesTZ from control.properties are implemented here.
+		//if more are needed, add the call here to the getNewNeededTableQuery("NewNeededTable")
+		String SQLQuery = "";
+		if(columnIdentifier.equals("Request")) {
+			if(tablesMultiThread.contains(columnIdentifier))SQLQuery=getSQLQueryMultiThreading(decodedValue, columnIdentifier);
+			else SQLQuery = getRequestQuery(decodedValue);
+		}
+		else if(columnIdentifier.equals("Manufacturer")) {
+			SQLQuery=getManufacturerQuery(decodedValue);
+		}
+		else if(columnIdentifier.equals("Disease")) {
+			SQLQuery=getDiseaseQuery(decodedValue);
+		}
+		else if(columnIdentifier.equals("MedicalSupply")) {
+			SQLQuery=getMedicalSupplyQuery(decodedValue);
+		}
+		else if(columnIdentifier.equals("RequestStatus")) {
+			SQLQuery=getRequestStatusQuery(decodedValue);
+		}
+		else if(columnIdentifier.equals("ShipmentR")) {
+			if(tablesMultiThread.contains(columnIdentifier))SQLQuery=getSQLQueryMultiThreading(decodedValue, columnIdentifier);
+			else SQLQuery = getShipmentRQuery(decodedValue);
+		}
+		
+		LoadInDB(SQLQuery, tz_DBurl, tz_DBusr, tz_DBpwd);
+
+	}
+
+
 	//not using multiThreading
 		public String getRequestQuery(String requestData) {
 			System.out.println("...generating requests SQLQuery from HBase data...");
@@ -309,6 +282,28 @@ public class landingZoneToTransformedZone {
 			}
 			return SQLQuery;
 		}
+		
+		
+		//multithreading to generate SQLQuery
+		public String getSQLQueryMultiThreading(String data, String whichData) {
+			String SQLQuery = ""; //UPSERT query
+			JSONArray content = new JSONArray(data);
+			int THREADS;
+			if(threadControl.equals("availableProcessors")) THREADS =  Runtime.getRuntime().availableProcessors();
+			else THREADS = Integer.parseInt(threadControl);
+			//System.out.println("using "+THREADS+" threads, generating queries");
+			//call ParallelPartialQueryGenerator
+			ParallelPartialQueryGenerator partialQueryGen = new ParallelPartialQueryGenerator(THREADS);
+			//put workers to work and get the result query 
+			try {
+				SQLQuery += partialQueryGen.partialQueriesSum(content, whichData);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+
+			return SQLQuery;
+		}
+		
 		
 		public String getManufacturerQuery(String ManufacturerData) {
 			System.out.println("...generating manufacturers SQLQuery from HBase data...");
@@ -537,6 +532,88 @@ public class landingZoneToTransformedZone {
 			
 			return SQLQuery;
 		}
+		
+		
+		
+		public String getAdministrationUnitQuery(String AdministrationUnitData) {
+			System.out.println("...generating administrationunit SQLQuery from HBase data...");
+			String SQLQuery="";
+			
+			JSONArray jsonArrayAdminsitrationUnit = new JSONArray(AdministrationUnitData);
+			System.out.println("aquesta es la lenght de les administrationunits a codificar ara:"+jsonArrayAdminsitrationUnit.length());
+			for(int i = 0;i<jsonArrayAdminsitrationUnit.length(); ++i) {
+				JSONObject AdministrationUnitJSONObj = jsonArrayAdminsitrationUnit.getJSONObject(i);
+				String parentid = "";
+				if(AdministrationUnitJSONObj.has("parent")) {
+					JSONObject JSONObjparent = AdministrationUnitJSONObj.getJSONObject("parent");
+					parentid = JSONObjparent.getString("id");
+				}
+				
+				Object aObj = AdministrationUnitJSONObj.get("address"); //if not received is null
+				String address=null;
+				if (aObj instanceof String) {
+					address = AdministrationUnitJSONObj.getString("address");
+				}
+				aObj = AdministrationUnitJSONObj.get("url");
+				String url = null;//just some organisationUnits have (e.g., http://www.hospitalclinic.org)
+				if(aObj instanceof String) {
+					url = AdministrationUnitJSONObj.getString("url");
+				}
+				if(i==1) {
+					if(address.equals("null"))System.out.print("aquesta es la null address: "+ address);
+				System.out.println(address);
+				System.out.println(url);
+				}
+				String id, name, shortname, datelastupdated;
+				Boolean leaf;
+				Integer levelnumber;
+				id = AdministrationUnitJSONObj.getString("id");
+				name = AdministrationUnitJSONObj.getString("name");
+				/*
+				if(id.contentEquals("yNHpYw6uIFQ")) {
+					System.out.println("nom mal fet, " +name);
+					String name1 = name.replaceAll("'", "''");
+					System.out.println("nom ben fet"+name1);
+				}*/
+				shortname = AdministrationUnitJSONObj.getString("shortName");
+				datelastupdated = AdministrationUnitJSONObj.getString("dateLastUpdated");
+				leaf = AdministrationUnitJSONObj.getBoolean("leaf");
+				levelnumber = AdministrationUnitJSONObj.getInt("levelNumber");
+				//!id.contentEquals("yNHpYw6uIFQ")&&
+				if((i<20)) {
+				SQLQuery += "INSERT INTO AdministrationUnit VALUES ('"
+						+ id + "','"
+						+ parentid + "','"
+						+ name.replaceAll("'","") + "','"
+						+ shortname.toString().replaceAll("'","") + "','"
+						+ datelastupdated.substring(0,10) + "',"
+						+ leaf + ","
+						+ levelnumber + ",'";
+						if(address.equals("null"))SQLQuery+=address+",";
+						else SQLQuery+= "'"+address+"',";
+						if(url.equals("null"))SQLQuery+= url+")";
+						else SQLQuery+= "'"+url+"')";
+						SQLQuery+= " ON CONFLICT ON CONSTRAINT administrationunit_pkey"
+						+ " DO UPDATE SET"
+						+ " parentid='"+parentid+"',"
+						+ " name='"+name+"',"
+						+ " shortname='"+shortname+"',"
+						+ " datelastupdated='"+datelastupdated.substring(0,10)+"',"
+						+ " leaf="+leaf+","
+						+ " levelnumber="+levelnumber+",";
+						if(address.equals("null"))SQLQuery+= " address="+address+",";
+						else SQLQuery+= " address='"+address+"',";
+						if(url.equals("null"))SQLQuery+= " url="+url+";\n";
+						else SQLQuery+= " url='"+url+"';\n";	
+						
+						
+						
+						
+			}
+			}
+			System.out.println(SQLQuery);
+			return SQLQuery;
+		}
 	
 	
 		public void LoadInDB(String SQLQuery, String tz_DBurl, String tz_DBLogin, String tz_DBPassword) {
@@ -621,7 +698,15 @@ public class landingZoneToTransformedZone {
 		this.setThreadControl(props.getProperty("nThreads"));
 		this.ctrlPath=ctrlPath;
 		
+		//define tablesmMultiThreading
+		if(!useMultiThreading)this.tablesMultiThread ="";//NO multi Threading is used
+		else {
+			String[] tablesMT = tablesMultiThread.split(",");
+			List tablesListMT = Arrays.asList(tablesMT);
+			System.out.println("tables multithreadin: "+ tablesListMT);
+		}
 		
+			
         Instant nowi = Instant.now();
 		LocalDateTime now = LocalDateTime.ofInstant(nowi, ZoneId.systemDefault());
         Timestamp timestamp = Timestamp.valueOf(now);

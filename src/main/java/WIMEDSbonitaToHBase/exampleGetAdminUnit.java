@@ -45,7 +45,7 @@ public class exampleGetAdminUnit {
 		Request request = new Request.Builder()
 				.url("http://localhost:8080/bonita/API/bdm/businessData/com.company.model.AdministrationUnit?q=find&p=0&c=106307")
 				.method("GET", null)
-				.addHeader("Cookie", "bonita.tenant=1; JSESSIONID=50A766AE95547805F2C6D72A3DDEC764; X-Bonita-API-Token=83b51c47-4ca1-485b-8fe3-456019c517b9; BOS_Locale=en")
+				.addHeader("Cookie", "bonita.tenant=1; JSESSIONID=5967FC993361512E87822FD5C815B871; X-Bonita-API-Token=f1c79280-cd48-4048-964d-ebbf9406e315; BOS_Locale=en")
 				.build();
 		Response response = client.newCall(request).execute();
 		

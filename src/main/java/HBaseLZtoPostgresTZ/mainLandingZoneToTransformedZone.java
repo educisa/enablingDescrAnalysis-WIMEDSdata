@@ -26,28 +26,25 @@ public class mainLandingZoneToTransformedZone {
 		String tz_DBpsw = lzTotz.getDBpwd();
 		
 		
-		/*
-		//create Transoformed Zone Tables and MV
-		PostgresSqlTransformedZone postgresSQLtz = new PostgresSqlTransformedZone(tz_DBurl, tz_DBusr, tz_DBpsw);
-		postgresSQLtz.createTables();
-		postgresSQLtz.createMaterializedViews();
-		*/
-		//get AdministrationUnits (en CAP MOMENT HAIG d'agafar les dades d'adminUnit de WIMEDS-Table-Data)
-		//it is just implemented to test block technique implementation
-		//content String will contain the complete JSONArray from a specific table
-		//content es el sumatori de tots els partialArrays recollits dels blocs
 		
+		//create Transoformed Zone Tables and MV
+		//PostgresSqlTransformedZone postgresSQLtz = new PostgresSqlTransformedZone(tz_DBurl, tz_DBusr, tz_DBpsw);
+		//postgresSQLtz.createTables();
+		//postgresSQLtz.createMaterializedViews();
+		
+		//see TZtables from control.properties
 		JSONArray content = lzTotz.getLandingZoneWIMEDSdata();
 		lzTotz.exportDataToTZ(content);
 		
-		/*
-		//see TZtables from control.properties
-		lzTotz.exportDataToTransformedZone();
+		//export OrgUnits from HBase OrgUnits table to AdministrationUnits table in Transformed zone
+		updateAdminUnitInLandingZone orgUnitsExtr = new updateAdminUnitInLandingZone();
+		orgUnitsExtr.extractOrgUnitsFromLZ();
+		
 		//once both medicalSupply and manufacturer Tables are populated with HBase data, populate their join table
-		postgresSQLtz.populateMedicalSupply_manufacturerTable();
+		//postgresSQLtz.populateMedicalSupply_manufacturerTable();
 		//refresh materialized views once all data have been exported
-		postgresSQLtz.refreshMaterializedViews();
-		*/
+		//postgresSQLtz.refreshMaterializedViews();
+		
 		
 	}
 

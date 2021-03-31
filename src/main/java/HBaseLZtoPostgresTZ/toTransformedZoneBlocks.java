@@ -39,7 +39,7 @@ public class toTransformedZoneBlocks {
 	//initial func
 	public void exportDataToTransformedZone() throws IOException, InterruptedException, ParseException {
 		//if useMultiThreading = false then tablesMultiThread should be overwritten to "";
-		if(!useMultiThreading)tablesMultiThread ="";//any multi Threading is used
+		if(!useMultiThreading)tablesMultiThread ="";//NO multi Threading is used
 		String[] tables = tablesNamesCSV.split(",");
 		for(int i = 0; i< tables.length; ++i) {
 			String SQLQuery = "";
