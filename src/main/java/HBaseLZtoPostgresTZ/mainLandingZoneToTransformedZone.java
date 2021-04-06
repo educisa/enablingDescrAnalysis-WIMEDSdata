@@ -18,19 +18,17 @@ public class mainLandingZoneToTransformedZone {
 
 		lzTotz.setProperties(ctrlPath);
 		
-		//since for Data we already know the row key, there is no need for a scanner
 		//defining PostgresDB connector params
 		
 		String tz_DBurl = lzTotz.getDBurl();
 		String tz_DBusr = lzTotz.getDBusr();
 		String tz_DBpsw = lzTotz.getDBpwd();
+
 		
-		
-		
-		//create Transoformed Zone Tables and MV
-		//PostgresSqlTransformedZone postgresSQLtz = new PostgresSqlTransformedZone(tz_DBurl, tz_DBusr, tz_DBpsw);
-		//postgresSQLtz.createTables();
-		//postgresSQLtz.createMaterializedViews();
+		//create Transformed Zone Tables and MV
+		PostgresSqlTransformedZone postgresSQLtz = new PostgresSqlTransformedZone(tz_DBurl, tz_DBusr, tz_DBpsw);
+		postgresSQLtz.createTables();
+		postgresSQLtz.createMaterializedViews();
 		
 		//see TZtables from control.properties
 		JSONArray content = lzTotz.getLandingZoneWIMEDSdata();
@@ -40,10 +38,8 @@ public class mainLandingZoneToTransformedZone {
 		updateAdminUnitInLandingZone orgUnitsExtr = new updateAdminUnitInLandingZone();
 		orgUnitsExtr.extractOrgUnitsFromLZ();
 		
-		//once both medicalSupply and manufacturer Tables are populated with HBase data, populate their join table
-		//postgresSQLtz.populateMedicalSupply_manufacturerTable();
 		//refresh materialized views once all data have been exported
-		//postgresSQLtz.refreshMaterializedViews();
+		postgresSQLtz.refreshMaterializedViews();
 		
 		
 	}

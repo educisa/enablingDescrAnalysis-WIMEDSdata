@@ -66,7 +66,7 @@ public class tz_mainUpdate {
 		//once both medicalSupply and manufacturer Tables are updated with HBase data, update their join table
 		//ON CONFLICT DO NOTHING, it has been already populated before on the first extraction
 		PostgresSqlTransformedZone postgresSQLtz = new PostgresSqlTransformedZone(tz_DBurl, tz_DBusr, tz_DBpsw);
-		postgresSQLtz.populateMedicalSupply_manufacturerTable();
+		//postgresSQLtz.populateMedicalSupply_manufacturerTable();
 		
 		//update extraction times from WIMEDS-Table-Data (HBase landing zone) 
 		ttz.setExtractionTimes(ctrlPath);

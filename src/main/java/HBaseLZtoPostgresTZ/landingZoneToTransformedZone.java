@@ -40,7 +40,7 @@ public class landingZoneToTransformedZone {
 	private String tz_DBurl, tz_DBusr, tz_DBpwd, HBaseTableURL, completeRowKey, colFam, tablesNamesCSV, tablesMultiThread, threadControl,
 	bodyScanner, scannerTRbatch;
 	long tz_thisExtractionTS;
-	String thisWIMEDSextractionTS;
+	String thisWIMEDSextractionTS, thisLZextractionTS;
 	List<String> tablesMultiThreadList;
 	
 	
@@ -142,11 +142,14 @@ public class landingZoneToTransformedZone {
 			System.out.println("la size de la row es: "+ RowObj.length());
 			JSONArray encodedJSONArray = RowObj.getJSONArray("Cell");
 			System.out.println("la size de lo de dins de la Cell es: "+encodedJSONArray.length());
-
+			/*
+			PrintStream fileStream = new PrintStream("outputLZtoTZ.txt");
+			System.setOut(fileStream);
+			System.out.println(JSONArrayRows);*/
 			for(int j = 0; j < encodedJSONArray.length(); ++j) {
 				//cada encodedJSONArray(j) és una columna, el problema es saber quina és
 				System.out.println(i+"-"+j);
-				//AGAFAR LA COLUMN DE DINS DEL encododedJSONArray.get(j) !!!!! :)))))))
+				//AGAFAR LA COLUMN DE DINS DEL encododedJSONArray.get(j)
 				JSONObject dataCell = (JSONObject) encodedJSONArray.get(j);
 				
 				String encodedColumn = dataCell.getString("column");
@@ -219,6 +222,8 @@ public class landingZoneToTransformedZone {
 		}
 		
 		LoadInDB(SQLQuery, tz_DBurl, tz_DBusr, tz_DBpwd);
+		
+		
 
 	}
 
@@ -321,7 +326,6 @@ public class landingZoneToTransformedZone {
 						+ id + ",'"
 						+ name + "') ON CONFLICT ON CONSTRAINT manufacturer_pkey"
 						+" DO UPDATE SET"
-						+" id="+id+","
 						+" name='"+name+"';\n";
 			}
 			return SQLQuery;
@@ -457,11 +461,11 @@ public class landingZoneToTransformedZone {
 			JSONArray jsonArrayship = new JSONArray(shipmentRdata);
 			
 			for(int i = 0;i<jsonArrayship.length(); ++i) {
-				int id, quantity, requestID, trackingNumber;
+				int id, medicalsupplyid,quantity, requestID, trackingNumber;
 				Integer quantityReceived = null;//int can not be null
 				String receptionDateString = null;
 				String courierName = null;
-				String medicalSupplyName, shipmentStatus, shipmentDateCreationString, EDDstring, healthFacilityName, 
+				String shipmentStatus, shipmentDateCreationString, EDDstring, healthFacilityName, 
 				shippedDateString;
 				
 				JSONObject shipmentJSONObj = jsonArrayship.getJSONObject(i);
@@ -476,7 +480,7 @@ public class landingZoneToTransformedZone {
 				if (aObj instanceof String) {
 					receptionDateString = shipmentJSONObj.getString("receptionDate");
 				}
-				medicalSupplyName = shipmentJSONObj.getJSONObject("medicalSupply").getString("name");
+				medicalsupplyid = shipmentJSONObj.getJSONObject("medicalSupply").getInt("persistenceId");
 				requestID = shipmentJSONObj.getJSONObject("request").getInt("persistenceId");
 				shipmentDateCreationString = shipmentJSONObj.getString("dateOfCreation");
 				shipmentDateCreationString = shipmentDateCreationString.substring(0,10);
@@ -487,10 +491,7 @@ public class landingZoneToTransformedZone {
 				}
 				shippedDateString = shipmentJSONObj.getString("shippedDate");
 				shipmentStatus = shipmentJSONObj.getString("shipmentStatus");
-				aObj = shipmentJSONObj.get("courierName");// sometimes courierName is null
-				if (aObj instanceof String) {
-					courierName = shipmentJSONObj.getString("courierName");
-				}
+				courierName = shipmentJSONObj.getJSONObject("courier").getString("name");
 				trackingNumber = shipmentJSONObj.getInt("trackingNumber");
 				
 				SQLQuery += "INSERT INTO shipmentR VALUES ("
@@ -502,8 +503,8 @@ public class landingZoneToTransformedZone {
 				else SQLQuery+=shippedDateString+"',";
 				if(receptionDateString == null)SQLQuery+=null + ",";
 				else SQLQuery += "'"+receptionDateString + "',";
-				SQLQuery += requestID + ",'"
-						+ medicalSupplyName + "','"
+				SQLQuery += requestID + ","
+						+ medicalsupplyid + ",'"
 						+ healthFacilityName + "',"
 						+ quantity + ",";
 				if(quantityReceived == null)SQLQuery+=null + ",";
@@ -519,7 +520,7 @@ public class landingZoneToTransformedZone {
 				else SQLQuery+= " shippedDate='"+shippedDateString+"',";
 				if(receptionDateString==null)SQLQuery+= " receptionDate="+receptionDateString+",";
 				else SQLQuery+= " receptionDate='"+receptionDateString+"',";	
-						SQLQuery+= " medicalsupplyname='"+medicalSupplyName+"',"
+						SQLQuery+= " medicalsupplyid="+medicalsupplyid+","
 						+ " healthFacilityName='"+healthFacilityName+"',"
 						+ " quantity="+quantity+","
 						+ " quantityreceived="+quantityReceived+",";
@@ -697,6 +698,10 @@ public class landingZoneToTransformedZone {
 		this.setTablesNamesMT(props.getProperty("tablesMultiThread"));
 		this.setThreadControl(props.getProperty("nThreads"));
 		this.ctrlPath=ctrlPath;
+		
+		System.out.println("last WIMEDS data extraction from Landing Zone to Transformed Zone was made on: "+
+		props.getProperty("tz_thisExtractionWIMEDSTableData"));
+		
 		
 		//define tablesmMultiThreading
 		if(!useMultiThreading)this.tablesMultiThread ="";//NO multi Threading is used

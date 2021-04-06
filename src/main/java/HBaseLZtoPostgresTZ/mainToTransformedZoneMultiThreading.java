@@ -72,7 +72,7 @@ public class mainToTransformedZoneMultiThreading {
 			//update extraction times from WIMEDS-Table-Data (HBase landing zone) 
 			ttz.setExtractionTimes(ctrlPath);
 			//once both medicalSupply and manufacturer Tables are populated with HBase data, populate their join table
-			postgresSQLtz.populateMedicalSupply_manufacturerTable();
+			//postgresSQLtz.populateMedicalSupply_manufacturerTable();
 			//refresh materialized views
 			postgresSQLtz.refreshMaterializedViews();
 			

@@ -165,12 +165,12 @@ public class ParallelWorker extends Thread{
 		if(this.whichData.equals("ShipmentR")) {
 			for(int i = low;i<high; ++i) {
 
-				int id, quantity, requestID, trackingNumber;
+				int id, medicalsupplyid,quantity, requestID, trackingNumber;
 				Integer quantityReceived = null;//int can not be null
 				String receptionDateString = null;
+				String shippedDateString = null;
 				String courierName = null;
-				String medicalSupplyName, shipmentStatus, shipmentDateCreationString, EDDstring, healthFacilityName, 
-				shippedDateString;
+				String shipmentStatus, shipmentDateCreationString, EDDstring, healthFacilityName;
 
 				JSONObject shipmentJSONObj = content.getJSONObject(i);
 				id = shipmentJSONObj.getInt("persistenceId");
@@ -184,21 +184,18 @@ public class ParallelWorker extends Thread{
 				if (aObj instanceof String) {
 					receptionDateString = shipmentJSONObj.getString("receptionDate");
 				}
-				medicalSupplyName = shipmentJSONObj.getJSONObject("medicalSupply").getString("name");
+				medicalsupplyid = shipmentJSONObj.getJSONObject("medicalSupply").getInt("persistenceId");
 				requestID = shipmentJSONObj.getJSONObject("request").getInt("persistenceId");
 				shipmentDateCreationString = shipmentJSONObj.getString("dateOfCreation");
 				shipmentDateCreationString = shipmentDateCreationString.substring(0,10);
 				EDDstring = shipmentJSONObj.getString("edd");
 				aObj = shipmentJSONObj.get("shippedDate");// if not shipped is null
 				if (aObj instanceof String) {
-					courierName = shipmentJSONObj.getString("shippedDate");
+					shippedDateString = shipmentJSONObj.getString("shippedDate");
 				}
 				shippedDateString = shipmentJSONObj.getString("shippedDate");
 				shipmentStatus = shipmentJSONObj.getString("shipmentStatus");
-				aObj = shipmentJSONObj.get("courierName");// sometimes courierName is null
-				if (aObj instanceof String) {
-					courierName = shipmentJSONObj.getString("courierName");
-				}
+				courierName = shipmentJSONObj.getJSONObject("courier").getString("name");
 				trackingNumber = shipmentJSONObj.getInt("trackingNumber");
 
 				partialQuery += "INSERT INTO shipmentR VALUES ("
@@ -210,8 +207,8 @@ public class ParallelWorker extends Thread{
 				else partialQuery+=shippedDateString+"',";
 				if(receptionDateString == null)partialQuery+=null + ",";
 				else partialQuery += "'"+receptionDateString + "',";
-				partialQuery += requestID + ",'"
-						+ medicalSupplyName + "','"
+				partialQuery += requestID + ","
+						+ medicalsupplyid + ",'"
 						+ healthFacilityName + "',"
 						+ quantity + ",";
 				if(quantityReceived == null)partialQuery+=null + ",";
@@ -227,7 +224,7 @@ public class ParallelWorker extends Thread{
 				else partialQuery+= " shippedDate='"+shippedDateString+"',";
 				if(receptionDateString==null)partialQuery+= " receptionDate="+receptionDateString+",";
 				else partialQuery+= " receptionDate='"+receptionDateString+"',";	
-				partialQuery+= " medicalsupplyname='"+medicalSupplyName+"',"
+				partialQuery+= " medicalsupplyid="+medicalsupplyid+","
 						+ " healthFacilityName='"+healthFacilityName+"',"
 						+ " quantity="+quantity+","
 						+ " quantityreceived="+quantityReceived+",";

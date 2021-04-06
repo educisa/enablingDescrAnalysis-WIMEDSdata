@@ -40,7 +40,7 @@ public class mainToTransformedZoneBlocks {
 		//see TZtables from control.properties
 		ttz.exportDataToTransformedZone();
 		//once both medicalSupply and manufacturer Tables are populated with HBase data, populate their join table
-		postgresSQLtz.populateMedicalSupply_manufacturerTable();
+		//postgresSQLtz.populateMedicalSupply_manufacturerTable();
 		//refresh materialized views once all data have been exported
 		postgresSQLtz.refreshMaterializedViews();
 	}

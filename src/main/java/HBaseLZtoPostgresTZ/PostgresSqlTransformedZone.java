@@ -26,18 +26,17 @@ public class PostgresSqlTransformedZone {
 	public void createTables() {
 		
 		String SQLQueryAdminUnit = createAdminUnitTable();
-		String SQLQueryReq = createRequestsTable();
 		String SQLQueryShipmentR = createShipmentRTable();
 		String SQLQueryDisease = createDiseaseTable();
 		String SQLQUeryRequestStatus = createRequestStatusTable();
-		String SQLQUeryManufacturer = createManufacturerTable();
+		String SQLQUeryManufacturer = createManufacturerTable();// Requests still do not have FK to manufacturer. Problem coming from data schema from WIMEDS business data
 		String SQLQueryMedicalSupply = createMedicalSupplyTable();
-		String SQLQueryMedicalSupply_manufacturer = createMedicalSupply_manufacturerTable();
-		String SQLQueryTimeDimTable = createTimeDimTable_populate();//not used since Tableau do its work for us
+		//String SQLQueryMedicalSupply_manufacturer = createMedicalSupply_manufacturerTable(); changed to Materialized View,in the future may be useful when having FK manufacturerid inside Request table
+		//String SQLQueryTimeDimTable = createTimeDimTable_populate();//not used since Tableau do this work for us
+		String SQLQueryReq = createRequestsTable();
 		
-		
-		String SQLQuery = SQLQueryAdminUnit+SQLQueryReq+SQLQueryShipmentR+SQLQueryDisease+SQLQUeryRequestStatus
-				+SQLQUeryManufacturer+SQLQueryMedicalSupply+SQLQueryMedicalSupply_manufacturer+SQLQueryTimeDimTable;
+		String SQLQuery = SQLQueryAdminUnit+SQLQueryDisease+SQLQUeryRequestStatus
+				+SQLQueryMedicalSupply+SQLQUeryManufacturer+SQLQueryReq+SQLQueryShipmentR;//order for FK
 		
 		DoitInDB(SQLQuery, DBurl, DBuser, DBpwd);
 	}
@@ -45,54 +44,64 @@ public class PostgresSqlTransformedZone {
 	//materialized views to be used for OLAP tool Tableau
 	public void createMaterializedViews() {
 		
-		String SQLQueryMV0 ="CREATE MATERIALIZED VIEW IF NOT EXISTS requests_summary1 AS"
-				+ " SELECT distinct r.id as requestID, r.requestdate as requestDate, r.healthfacility as healthFacility, au.shortname as Country, au1.shortname as continent, rs.name as requestStatus, ms.name as medicalSupply, d.name as disease"
-				+ " FROM request r, administrationunit au, requeststatus rs, medicalsupply ms, disease d, administrationunit au1"
-				+ " WHERE r.countryid=au.id and r.requeststatusid=rs.id and r.medicalsupplyid=ms.id and r.diseaseid=d.id and au.parentid=au1.id"
-				+ " order by r.id, r.requestdate, au.shortname, rs.name, ms.name, d.name;";
+		String SQLQueryMV0 ="CREATE MATERIALIZED VIEW if not exists request_broadOverview AS "
+				+ "SELECT distinct r.id as requestID, r.requestdate as requestDate, au.shortname as Country, au1.shortname as WHORegion, d.name as disease, r.diseasephase as phase, r.healthFacility"
+				+ " FROM request r, administrationunit au, disease d, administrationunit au1"
+				+ " WHERE r.countryid=au.id and r.diseaseid=d.id and au.parentid=au1.id"
+				+ " order by r.id, r.requestdate, au.shortname, d.name;";
 		
-		String SQLQueryMV1 = "CREATE MATERIALIZED VIEW IF NOT EXISTS requests_summary2 AS"
-				+ " SELECT distinct r.id as requestID, r.requestdate as requestDate, au.shortname as Country, au1.shortname as continent, d.name as disease, r.patientage as patient_age,"
-				+ "r.patientweightinkg as patient_weigthInKg, r.diseasephase as phase"
-				+ " FROM request r, administrationunit au, requeststatus rs, medicalsupply ms, disease d, administrationunit au1"
-				+ " WHERE r.countryid=au.id and r.requeststatusid=rs.id and r.medicalsupplyid=ms.id and r.diseaseid=d.id and au.parentid=au1.id"
-				+ " order by r.id, r.requestdate, au.shortname, d.name, r.patientage, r.patientweightinkg, r.diseasephase;";
+		String SQLQueryMV1 = "CREATE materialized view if not exists described_requestsoverview as"
+				+ " SELECT distinct r.id, abs(s.receptiondate :: date - r.requestdate :: date) as requestProcessTime_days,"
+				+ "abs(s.shipmentcreationdate :: date - r.requestdate :: date) as requestToShipmentTime_days,"
+				+ "abs(s.shippeddate :: date - s.shipmentcreationdate :: date) as timeToPrepareShipment_days,"
+				+ "abs(s.receptiondate :: date - s.shippeddate :: date) as shipmentDuration_days,"
+				+ "s.shipmentcreationdate, s.shipmentstatus, s.EDD, s.shippeddate, s.receptiondate, r.quantity, s.quantityreceived,"
+				+ "r.requestdate as requestDate, r.healthfacility, au.shortname as Country, au1.shortname as WHORegion, d.name as disease,"
+				+ "r.patientweightinkg as patient_weigthInKg, r.patientage as patient_age, r.diseasephase as phase, r.transmissionway,"
+				+ "rs.name as requeststatus, ms.name as medicalsupplyname, ms.completename as medicalsupplyFormat"
+				+ " from request r LEFT JOIN shipmentr s on r.id=s.requestid "
+				+ "left join disease d on d.id=r.diseaseid "
+				+ "left join administrationunit au on au.id=r.countryid "
+				+ "left join administrationunit au1 on au.parentid=au1.id "
+				+ "left join requeststatus rs on r.requeststatusid=rs.id "
+				+ "left join medicalsupply ms on r.medicalsupplyid=ms.id;";
 		
-		String SQLQueryMV2 = "CREATE MATERIALIZED VIEW IF NOT EXISTS manufacturer_requests_summary AS"
-				+ " SELECT distinct r.id as requestID, r.requestdate as requestDate, au.shortname as shortname, rs.name as requestStatus, ms.name as medicalSupply, mf.name as manufacturer"
-				+ " FROM request r, administrationunit au, requeststatus rs, medicalsupply ms, manufacturer mf, medicalsupply_manufacturer msm"
-				+ " WHERE r.countryid=au.id and r.requeststatusid=rs.id and r.medicalsupplyid=ms.id and ms.id=msm.medicalsupplyid and msm.manufacturerid=mf.id"
-				+ " order by r.id, r.requestdate, au.shortname, rs.name, ms.name, mf.name;";
+		String SQLQueryMV2 = "CREATE MATERIALIZED VIEW if not exists MailingOffice_RequestsSummary AS "
+				+ "SELECT distinct r.id as requestID, r.requestdate as requestDate, rs.name as requeststatus, au.shortname as Country, au1.shortname as WHORegion, ms.name as medicalSupplyName, ms.completename as medSupCompleteName,"
+				+ "r.quantity as askedQuantity, s.quantityreceived, s.couriername, s.trackingnumber, s.edd, s.shippeddate, s.receptiondate, s.healthfacilityname as healthfacility_Requester,"
+				+ "abs(s.receptiondate :: date - s.shippeddate :: date) as shipmentDuration_days"
+				+ " FROM request r, requeststatus rs, administrationunit au, administrationunit au1, medicalsupply ms, shipmentr s"
+				+ " WHERE r.requeststatusid = rs.id and r.id=s.requestid and r.countryid=au.id and au.parentid=au1.id and r.medicalsupplyid=ms.id"
+				+ " order by r.id, r.requestdate, au.shortname, s.trackingnumber;";
 		
-		String SQLQueryMV = SQLQueryMV0+SQLQueryMV1+SQLQueryMV2;
+		String SQLQueryMV3="create materialized view if not exists medicalsupplies_manufacturers as "
+				+ "SELECT DISTINCT"
+				+ "    medicalsupply.id as medicalSupplyID,"
+				+ "    manufacturer.id as manufacturerID,"
+				+ "	medicalsupply.name as medicalsupply,"
+				+ "	manufacturer.name as manufacturer"
+				+ " FROM"
+				+ "    medicalsupply, manufacturer"
+				+ " where manufacturer.id = ANY (medicalsupply.manufacturersids)"
+				+ " order by medicalSupplyID, manufacturerID;";
+		
+		
+		String SQLQueryMV = SQLQueryMV0+SQLQueryMV1+SQLQueryMV2+SQLQueryMV3;
 		DoitInDB(SQLQueryMV, DBurl, DBuser, DBpwd);
 	}
 	
-	//to be called each time an update from the tables is done, in order to get updated data in Tableau
+	//to be called each time a transformed zone update is done, in order to get updated data in Tableau
 	public void refreshMaterializedViews() {
-		String refreshMV0 = "REFRESH MATERIALIZED VIEW requests_summary1;";
-		String refreshMV1 = "REFRESH MATERIALIZED VIEW requests_summary2;";
-		String refreshMV2 = "REFRESH MATERIALIZED VIEW manufacturer_requests_summary;";
+		String refreshMV0 = "REFRESH MATERIALIZED VIEW request_broadOverview;";
+		String refreshMV1 = "REFRESH MATERIALIZED VIEW MailingOffice_RequestsSummary;";
+		String refreshMV2 = "REFRESH MATERIALIZED VIEW described_requestsoverview;";
+		String refresgMV3 = "REFRESH MATERIALIZED VIEW medicalsupply_manufacturerto;";
+		
 		
 		String SQLQUeryRefreshMV = refreshMV0+refreshMV1+refreshMV2;
 		DoitInDB(SQLQUeryRefreshMV, DBurl, DBuser, DBpwd);
 	}
 	
-	
-	public void populateMedicalSupply_manufacturerTable() {
-		
-		String SQLQueryPopulate = "insert into medicalsupply_manufacturer"
-				+ " SELECT DISTINCT"
-				+ " medicalsupply.id as medicalSupplyID,"
-				+ " manufacturer.id as manufacturerID"
-				+ " FROM"
-				+ " medicalsupply, manufacturer"
-				+ " where manufacturer.id = ANY (medicalsupply.manufacturersids)"
-				+ " order by medicalSupplyID, manufacturerID"
-				+ " ON CONFLICT DO NOTHING;";
-		
-		DoitInDB(SQLQueryPopulate, DBurl, DBuser, DBpwd);
-	}
 	
 	
 	public String createAdminUnitTable() {
@@ -112,20 +121,20 @@ public class PostgresSqlTransformedZone {
 		return SQLQuery;
 	}
 	
-	
 	public String createRequestsTable() {
 		String SQLQuery = "CREATE TABLE IF NOT EXISTS Request("
 				+ "id int NOT NULL PRIMARY KEY,"
-				+ "countryid character varying(11),"
+				+ "countryid character varying(11)," 
 				+ "healthfacility character varying(150),"
-				+ "diseaseid integer,"
-				+ "medicalsupplyid integer,"
-				+ "requeststatusid integer,"
+				+ "diseaseid integer," 
+				+ "medicalsupplyid integer," 
+				+ "requeststatusid integer," 
 				+ "requestdate date,"
 				+ "patientAge integer,"
 				+ "patientWeightInKg integer,"
 				+ "diseasePhase character varying(22),"
-				+ "transmissionWay character varying(22)"
+				+ "transmissionWay character varying(22),"
+				+ "quantity integer"
 				+ ");";
 		
 		return SQLQuery;
@@ -141,11 +150,12 @@ public class PostgresSqlTransformedZone {
 				+ "shippedDate date,"
 				+ "receptionDate date,"
 				+ "requestid integer,"
-				+ "medicalsupplyname character varying(150),"
+				+ "medicalsupplyid character varying(150),"
 				+ "healthFacilityName character varying(200),"
-				+ "courierName character varying(10),"
 				+ "quantity integer,"
-				+ "quantityreceived integer"
+				+ "quantityreceived integer,"
+				+ "courierName character varying(10),"
+				+ "trackingnumber integer"
 				+ ");";
 		
 		return SQLQuery;
@@ -198,6 +208,7 @@ public class PostgresSqlTransformedZone {
 		return SQLQuery;
 	}
 	
+	/*changed to MV
 	public String createMedicalSupply_manufacturerTable() {
 		
 		String SQLQuery = "CREATE TABLE IF NOT EXISTS medicalsupply_manufacturer"
@@ -208,9 +219,25 @@ public class PostgresSqlTransformedZone {
 				+ ");";
 		
 		return SQLQuery;
-	}
+	}*/
 	
+	/*changed to MV, it will be refreshed
+	public void populateMedicalSupply_manufacturerTable() {
+		
+		String SQLQueryPopulate = "insert into medicalsupply_manufacturer"
+				+ " SELECT DISTINCT"
+				+ " medicalsupply.id as medicalSupplyID,"
+				+ " manufacturer.id as manufacturerID"
+				+ " FROM"
+				+ " medicalsupply, manufacturer"
+				+ " where manufacturer.id = ANY (medicalsupply.manufacturersids)"
+				+ " order by medicalSupplyID, manufacturerID"
+				+ " ON CONFLICT DO NOTHING;";
+		
+		DoitInDB(SQLQueryPopulate, DBurl, DBuser, DBpwd);
+	}*/
 	
+	//not used. Tableau give us all the needed date functionalities.
 	public String createTimeDimTable_populate() {
 		
 		String SQLQueryCreate = "	CREATE TABLE IF NOT EXISTS time_dim"
