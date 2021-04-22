@@ -25,8 +25,7 @@ public class HbaseUtilities {
 	 
 	 
 	 public void createDataTable() throws IOException {
-		 //primer mirem que no existeixi aquella taula, es podria fer agafant el resultat de la crida:
-		 
+		 //ask if the table already exists
 		 try {
 		 OkHttpClient client = new OkHttpClient().newBuilder()
 				 .build();

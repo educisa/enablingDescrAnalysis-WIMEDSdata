@@ -50,6 +50,7 @@ public class BonitaRESTAuth {
 				
 	}
 	
+	//trying with the second call technique (in order to get the token)
 	public String getBonitaToken(String jsessionid) throws IOException {
 
 		OkHttpClient client = new OkHttpClient().newBuilder()

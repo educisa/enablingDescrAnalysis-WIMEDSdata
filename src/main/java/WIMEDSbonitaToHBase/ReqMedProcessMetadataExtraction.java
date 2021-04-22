@@ -110,7 +110,7 @@ public class ReqMedProcessMetadataExtraction {
 		thisWIMEDSextractionDateTime = props.getProperty("thisWIMEDSextractionDateTime");
 		last_update_date = props.getProperty("metadataLastUpdateTime");
 
-		//convertir les dos en el mateix format
+		//convertir les dues en el mateix format
 		thisWIMEDSextractionDateTime = thisWIMEDSextractionDateTime.substring(0,10)+' '+ thisWIMEDSextractionDateTime.substring(11,23);
 		last_update_date = last_update_date.substring(0,10)+' '+ last_update_date.substring(11,23);
 		DateFormat df = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
@@ -137,8 +137,6 @@ public class ReqMedProcessMetadataExtraction {
 			out.close();
 
 		}
-
-		//i aqui es cridaria a store la metadata pero de momment aixo no ho fem
 		else System.out.println("No metadata update needed");
 		return metadataUpdateNeeded;
 	}

@@ -2,7 +2,7 @@ package FormattedZoneToTransformedZone;
 
 import java.io.IOException;
 
-import HBaseLZtoPostgresTZ.landingZoneToTransformedZone;
+import LandingZoneToFormattedZone.landingZoneToFormattedZone;
 
 public class mainFZtoTZ {
 	
@@ -23,11 +23,12 @@ public class mainFZtoTZ {
 		String tz_DBpsw = toTransformedZone.getTZDBpwd();
 		System.out.println(tz_DBpsw+" "+tz_DBurl+" "+tz_DBusr);
 		
-		String SQLst = toTransformedZone.getSQLst();
+		//data wrapper for postgres
+		String SQLstDataWrapper = toTransformedZone.getSQLst();
+		toTransformedZone.LoadInDB(SQLstDataWrapper, tz_DBurl, tz_DBusr, tz_DBpsw);
 		
-		System.out.println(SQLst);
-		
-		toTransformedZone.LoadInDB(SQLst, tz_DBurl, tz_DBusr, tz_DBpsw);
+		//create mat views in transformed zone if needed and refresh them
+		toTransformedZone.getSQLmv();
 		
 	}
 
